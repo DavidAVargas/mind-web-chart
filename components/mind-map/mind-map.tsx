@@ -6,12 +6,16 @@ import {
   BackgroundVariant,
   Controls,
   ReactFlow,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   type Edge,
 } from "@xyflow/react";
 import BubbleNodeView, { type BubbleNode } from "./bubble-node";
 import FloatingEdge from "./floating-edge";
+import { MindMapContext } from "./mind-map-context";
+import NotesPanel from "./notes-panel";
+import { useMemo, useState } from "react";
 import { BUBBLE_CLASSES } from "@/lib/mind-map/bubble-classes";
 
 const nodeTypes = { bubble: BubbleNodeView };
@@ -33,27 +37,43 @@ const initialNodes: BubbleNode[] = [
 export default function MindMap() {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState<Edge>([]);
+  const [notesNodeId, setNotesNodeId] = useState<string | null>(null);
+  const context = useMemo(() => ({ openNotes: setNotesNodeId }), []);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      nodesConnectable={false}
-      // Deleting comes in a later step, so the Delete key does nothing for now.
-      deleteKeyCode={null}
-      fitView
-      fitViewOptions={{ maxZoom: 1 }}
-      minZoom={0.1}
-      maxZoom={3}
-      zoomOnDoubleClick={false}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background variant={BackgroundVariant.Dots} gap={24} />
-      <Controls showInteractive={false} />
-    </ReactFlow>
+    <ReactFlowProvider>
+      <MindMapContext value={context}>
+        <div className="relative h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            nodesConnectable={false}
+            // Deleting comes in a later step, so the Delete key does nothing for now.
+            deleteKeyCode={null}
+            fitView
+            fitViewOptions={{ maxZoom: 1 }}
+            minZoom={0.1}
+            maxZoom={3}
+            zoomOnDoubleClick={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={24} />
+            <Controls showInteractive={false} />
+          </ReactFlow>
+
+          {notesNodeId && (
+            <NotesPanel
+              key={notesNodeId}
+              nodeId={notesNodeId}
+              onClose={() => setNotesNodeId(null)}
+            />
+          )}
+        </div>
+      </MindMapContext>
+    </ReactFlowProvider>
   );
 }

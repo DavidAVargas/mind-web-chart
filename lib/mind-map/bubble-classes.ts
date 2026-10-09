@@ -60,3 +60,11 @@ export const BUBBLE_CLASSES: Record<BubbleClass, BubbleClassConfig> = {
     childClass: "none",
   },
 };
+
+/** Classes you can pick for a bubble; "root" belongs to My Mind only. */
+export const PICKABLE_CLASSES = (
+  Object.keys(BUBBLE_CLASSES) as BubbleClass[]
+).filter((bubbleClass) => bubbleClass !== "root");
+
+/** Titles stay short so they fit in the bubble; longer thoughts go in the notes. */
+export const MAX_LABEL_LENGTH = 40;

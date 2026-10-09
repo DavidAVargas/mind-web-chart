@@ -6,25 +6,27 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { Plus } from "lucide-react";
+import { NotebookPen, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import {
   BUBBLE_CLASSES,
+  MAX_LABEL_LENGTH,
   type BubbleClass,
 } from "@/lib/mind-map/bubble-classes";
 import { getChildPosition } from "@/lib/mind-map/layout";
 import { cn } from "@/lib/utils";
+import { useMindMap } from "./mind-map-context";
 
 export type BubbleData = {
   label: string;
   bubbleClass: BubbleClass;
+  /** Longer, optional detail shown in the notes panel. */
+  note?: string;
   /** True for a bubble that was just added and hasn't been named yet. */
   isNew?: boolean;
 };
 
 export type BubbleNode = Node<BubbleData, "bubble">;
-
-const MAX_LABEL_LENGTH = 60;
 
 function getCenter(node: BubbleNode) {
   const size = BUBBLE_CLASSES[node.data.bubbleClass].size;
@@ -44,9 +46,15 @@ export default function BubbleNodeView({
     updateNodeData,
     deleteElements,
   } = useReactFlow<BubbleNode, Edge>();
+  const { openNotes } = useMindMap();
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
   const config = BUBBLE_CLASSES[data.bubbleClass];
   const isRoot = data.bubbleClass === "root";
+  const hasNote = Boolean(data.note?.trim());
+  // Hover on desktop; tap-to-select on touch screens, which have no hover.
+  const actionVisibility = selected
+    ? "opacity-100"
+    : "opacity-0 group-hover:opacity-100";
 
   function addChild() {
     const parent = getNode(id);
@@ -134,7 +142,39 @@ export default function BubbleNodeView({
           }}
         />
       ) : (
-        data.label
+        <span
+          title={data.label}
+          className={cn("line-clamp-3", !data.label && "opacity-50")}
+        >
+          {data.label || "Untitled"}
+        </span>
+      )}
+
+      {hasNote && (
+        <button
+          type="button"
+          onClick={() => openNotes(id)}
+          aria-label={`Open notes for ${data.label}`}
+          title="Has notes"
+          className="nodrag border-border bg-background text-foreground absolute top-[7%] right-[7%] flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm"
+        >
+          <NotebookPen className="size-3.5" aria-hidden="true" />
+        </button>
+      )}
+
+      {!isEditing && (
+        <button
+          type="button"
+          onClick={() => openNotes(id)}
+          aria-label={`Edit details for ${data.label}`}
+          title="Notes and class"
+          className={cn(
+            "nodrag border-border bg-background text-foreground absolute bottom-[7%] left-[7%] flex size-7 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border shadow-md transition-opacity hover:scale-110",
+            actionVisibility,
+          )}
+        >
+          <Pencil className="size-3.5" aria-hidden="true" />
+        </button>
       )}
 
       {!isEditing && (
@@ -145,8 +185,7 @@ export default function BubbleNodeView({
           title="Add a bubble"
           className={cn(
             "nodrag border-border bg-background text-foreground absolute right-[7%] bottom-[7%] flex size-7 translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border shadow-md transition-opacity hover:scale-110",
-            // Hover on desktop; tap-to-select on touch screens, which have no hover.
-            selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+            actionVisibility,
           )}
         >
           <Plus className="size-4" aria-hidden="true" />
