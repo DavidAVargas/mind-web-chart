@@ -6,7 +6,14 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { Link2, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronsDownUp,
+  Link2,
+  NotebookPen,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState, type ComponentProps } from "react";
 import {
   BUBBLE_CLASSES,
@@ -23,6 +30,8 @@ export type BubbleData = {
   bubbleClass: BubbleClass;
   /** Longer, optional detail shown in the notes panel. */
   note?: string;
+  /** Everything branching off this bubble is hidden. */
+  collapsed?: boolean;
   /** True for a bubble that was just added and hasn't been named yet. */
   isNew?: boolean;
 };
@@ -60,7 +69,16 @@ export default function BubbleNodeView({
     updateNodeData,
     deleteElements,
   } = useReactFlow<BubbleNode, Edge>();
-  const { openNotes, startLink, linkOrigin, focusNodeIds } = useMindMap();
+  const {
+    openNotes,
+    startLink,
+    toggleCollapse,
+    descendantCounts,
+    linkOrigin,
+    focusNodeIds,
+    dropTargetId,
+  } = useMindMap();
+  const descendants = descendantCounts.get(id) ?? 0;
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
   const config = BUBBLE_CLASSES[data.bubbleClass];
   const isRoot = data.bubbleClass === "root";
@@ -70,6 +88,8 @@ export default function BubbleNodeView({
   function addChild() {
     const parent = getNode(id);
     if (!parent) return;
+    // Open a collapsed branch so the new bubble shows up.
+    if (data.collapsed) updateNodeData(id, { collapsed: false });
 
     const edges = getEdges();
     const grandparentId = getParentId(id, edges);
@@ -119,12 +139,13 @@ export default function BubbleNodeView({
       style={{ width: config.size, height: config.size }}
       onDoubleClick={() => !isRoot && setIsEditing(true)}
       className={cn(
-        "group relative flex items-center justify-center rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity]",
+        "group relative flex items-center justify-center rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity,scale]",
         config.className,
         selected && "ring-ring/50 ring-4",
         isLinkSource && "ring-4 ring-emerald-500",
         linkOrigin && !isLinkSource && "cursor-crosshair",
         focusNodeIds && !focusNodeIds.has(id) && "opacity-25",
+        dropTargetId === id && "ring-primary scale-110 ring-4",
       )}
     >
       {/* Edges need handles to attach to; the floating edge ignores where they sit. */}
@@ -169,6 +190,24 @@ export default function BubbleNodeView({
         </span>
       )}
 
+      {dropTargetId === id && (
+        <span className="bg-primary text-primary-foreground absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shadow-md">
+          Move here
+        </span>
+      )}
+
+      {data.collapsed && descendants > 0 && (
+        <button
+          type="button"
+          onClick={() => toggleCollapse(id)}
+          aria-label={`Show ${descendants} hidden bubbles under ${data.label}`}
+          title="Show branch"
+          className="nodrag bg-foreground text-background absolute top-1/2 left-full -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-semibold shadow-md transition-transform hover:scale-110"
+        >
+          +{descendants}
+        </button>
+      )}
+
       {hasNote && (
         <ActionButton
           onClick={() => openNotes(id)}
@@ -211,6 +250,15 @@ export default function BubbleNodeView({
           >
             <Pencil className="size-3.5" aria-hidden="true" />
           </ActionButton>
+          {descendants > 0 && !data.collapsed && (
+            <ActionButton
+              onClick={() => toggleCollapse(id)}
+              aria-label={`Hide everything under ${data.label}`}
+              title="Collapse branch"
+            >
+              <ChevronsDownUp className="size-3.5" aria-hidden="true" />
+            </ActionButton>
+          )}
           {!isRoot && (
             <ActionButton
               onClick={() => deleteElements({ nodes: [{ id }] })}

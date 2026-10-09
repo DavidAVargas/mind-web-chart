@@ -8,6 +8,10 @@ import {
   type BubbleClass,
 } from "@/lib/mind-map/bubble-classes";
 
+/** Side panel on desktop, bottom sheet on phones. */
+export const PANEL_CLASS =
+  "border-border bg-card text-card-foreground absolute inset-x-0 bottom-0 z-20 flex max-h-[60%] flex-col gap-4 overflow-y-auto rounded-t-2xl border-t p-4 shadow-2xl sm:inset-x-auto sm:top-0 sm:right-0 sm:max-h-none sm:w-96 sm:rounded-none sm:border-t-0 sm:border-l";
+
 /** Side panel on desktop, bottom sheet on phones, for a bubble's title, class and notes. */
 export default function NotesPanel({
   nodeId,
@@ -43,7 +47,7 @@ export default function NotesPanel({
     <aside
       aria-label="Bubble details"
       onKeyDown={(event) => event.key === "Escape" && onClose()}
-      className="border-border bg-card text-card-foreground absolute inset-x-0 bottom-0 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto rounded-t-2xl border-t p-4 shadow-2xl sm:inset-x-auto sm:top-0 sm:right-0 sm:max-h-none sm:w-96 sm:rounded-none sm:border-t-0 sm:border-l"
+      className={PANEL_CLASS}
     >
       <div className="flex items-center justify-between">
         <h2 className="text-muted-foreground text-sm font-semibold">

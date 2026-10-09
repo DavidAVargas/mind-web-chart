@@ -2,6 +2,11 @@ import { createContext, useContext } from "react";
 
 type MindMapContextValue = {
   openNotes: (nodeId: string) => void;
+  openThreadNotes: (edgeId: string) => void;
+  /** Hide or show everything branching off a bubble. */
+  toggleCollapse: (nodeId: string) => void;
+  /** How many bubbles branch off each bubble, at any depth. */
+  descendantCounts: Map<string, number>;
   /** Start a new connector thread from this bubble. */
   startLink: (nodeId: string) => void;
   /** Keep adding bubbles to an existing thread. */
@@ -13,6 +18,8 @@ type MindMapContextValue = {
   focusEdgeId: string | null;
   /** Bubbles in the focused thread. */
   focusNodeIds: Set<string> | null;
+  /** The bubble a dragged bubble will move under if dropped now. */
+  dropTargetId: string | null;
 };
 
 export const MindMapContext = createContext<MindMapContextValue | null>(null);

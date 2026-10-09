@@ -5,7 +5,7 @@ import {
   type EdgeProps,
   type ReactFlowState,
 } from "@xyflow/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import {
   getThreadMembers,
@@ -119,9 +119,12 @@ export default function ConnectorEdge({
   data,
   selected,
 }: EdgeProps) {
-  const { focusEdgeId, addToThread, deleteThread } = useMindMap();
+  const { focusEdgeId, addToThread, deleteThread, openThreadNotes } =
+    useMindMap();
   const members = getThreadMembers({ id, source, target, data });
-  const color = (data as ThreadData | undefined)?.color ?? THREAD_COLORS[0];
+  const threadData = data as ThreadData | undefined;
+  const color = threadData?.color ?? THREAD_COLORS[0];
+  const note = threadData?.note?.trim();
   const ids = [source, ...members];
   const idsKey = ids.join(",");
 
@@ -130,7 +133,8 @@ export default function ConnectorEdge({
       (state: ReactFlowState) =>
         idsKey.split(",").map((nodeId) => {
           const node = state.nodeLookup.get(nodeId);
-          return node?.measured.width ? getCircle(node) : null;
+          // Bubbles hidden in a collapsed branch drop out of the thread.
+          return node?.measured.width && !node.hidden ? getCircle(node) : null;
         }),
       [idsKey],
     ),
@@ -168,6 +172,19 @@ export default function ConnectorEdge({
           opacity={isDimmed ? 0.15 : 1}
         />
       )}
+      {isFocused && note && (
+        <EdgeLabelRenderer>
+          <p
+            style={{
+              transform: `translate(-50%, 0) translate(${hub.x}px, ${hub.y + (selected ? 24 : 12)}px)`,
+              borderColor: color,
+            }}
+            className="bg-card text-card-foreground pointer-events-none absolute max-w-60 rounded-lg border-2 px-3 py-2 text-xs leading-snug shadow-lg"
+          >
+            {note}
+          </p>
+        </EdgeLabelRenderer>
+      )}
       {selected && (
         <EdgeLabelRenderer>
           <div
@@ -181,6 +198,11 @@ export default function ConnectorEdge({
                 label: "Add a bubble to this thread",
                 icon: Plus,
                 onClick: () => addToThread(id),
+              },
+              {
+                label: "Why are these connected?",
+                icon: Pencil,
+                onClick: () => openThreadNotes(id),
               },
               {
                 label: "Delete this thread",

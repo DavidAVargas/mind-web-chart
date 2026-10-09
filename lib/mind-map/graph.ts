@@ -36,6 +36,8 @@ export type ThreadData = {
   /** Bubbles hanging off the thread, in the order they were added. */
   members?: string[];
   color?: string;
+  /** Why these bubbles are connected. */
+  note?: string;
 };
 
 /** Distinct colors so crossing threads stay easy to tell apart. */

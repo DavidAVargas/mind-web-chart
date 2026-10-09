@@ -11,27 +11,40 @@ import {
   useNodesState,
   useReactFlow,
   type Edge,
+  type OnNodeDrag,
   type OnBeforeDelete,
   type OnDelete,
 } from "@xyflow/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 import BubbleNodeView, { type BubbleNode } from "./bubble-node";
 import ConnectorEdge from "./connector-edge";
 import FloatingEdge from "./floating-edge";
 import { MindMapContext } from "./mind-map-context";
 import NotesPanel from "./notes-panel";
+import ThreadPanel from "./thread-panel";
+import Toolbar from "./toolbar";
+import { useHistory } from "./use-history";
 import { BUBBLE_CLASSES } from "@/lib/mind-map/bubble-classes";
 import {
   BRANCH_EDGE,
   CONNECTOR_EDGE,
   getBranchIds,
+  getParentId,
   getThreadMembers,
   getThreadNodeIds,
   isBranch,
   THREAD_COLORS,
 } from "@/lib/mind-map/graph";
-import { loadMap, saveMap } from "@/lib/mind-map/storage";
+import { getUndroppableIds, moveBranch } from "@/lib/mind-map/move";
+import { exportMap, importMap } from "@/lib/mind-map/backup";
+import {
+  loadMap,
+  saveMap,
+  toSavedMap,
+  type SavedMap,
+} from "@/lib/mind-map/storage";
+import { tidyLayout } from "@/lib/mind-map/tidy";
 
 const nodeTypes = { bubble: BubbleNodeView };
 const edgeTypes = {
@@ -63,6 +76,11 @@ export default function MindMap() {
 /** Wait this long after the last change before saving. */
 const SAVE_DELAY_MS = 300;
 
+/** How long the tidy-up animation takes. */
+const TIDY_MS = 450;
+
+type Details = { kind: "bubble" | "thread"; id: string };
+
 type Linking = {
   /** The bubble the thread comes from. */
   originId: string;
@@ -72,7 +90,9 @@ type Linking = {
 
 function MindMapCanvas() {
   const [saved] = useState(() => loadMap<BubbleNode>());
-  const [nodes, , onNodesChange] = useNodesState(saved?.nodes ?? initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    saved?.nodes ?? initialNodes,
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
     saved?.edges ?? [],
   );
@@ -84,12 +104,83 @@ function MindMapCanvas() {
     addNodes,
     addEdges,
     deleteElements,
+    fitView,
   } = useReactFlow<BubbleNode, Edge>();
-  const [notesNodeId, setNotesNodeId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Details | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [linking, setLinking] = useState<Linking | null>(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   // Threads that lose some (not all) of their bubbles in a delete, as they were before.
   const threadsBeforeDelete = useRef<Edge[]>([]);
+  // The bubble a dragged bubble would move under if dropped now.
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const dragStart = useRef<{ nodes: BubbleNode[]; edges: Edge[] } | null>(null);
+
+  const savedMap = useMemo(() => toSavedMap(nodes, edges), [nodes, edges]);
+  const applyMap = useCallback(
+    (map: SavedMap) => {
+      setNodes(map.nodes as BubbleNode[]);
+      setEdges(map.edges);
+    },
+    [setNodes, setEdges],
+  );
+  const { undo, redo, canUndo, canRedo } = useHistory(savedMap, applyMap);
+
+  // Everything under a collapsed bubble is hidden.
+  const hiddenIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const node of nodes) {
+      if (!node.data.collapsed) continue;
+      for (const id of getBranchIds([node.id], edges)) {
+        if (id !== node.id) ids.add(id);
+      }
+    }
+    return ids;
+  }, [nodes, edges]);
+
+  const displayNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const hidden = hiddenIds.has(node.id);
+        return Boolean(node.hidden) === hidden ? node : { ...node, hidden };
+      }),
+    [nodes, hiddenIds],
+  );
+
+  // A thread hides along with its target bubble, so point it at a member
+  // that's still showing.
+  const displayEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        if (isBranch(edge) || !hiddenIds.has(edge.target)) return edge;
+        const visible = getThreadMembers(edge).find((id) => !hiddenIds.has(id));
+        return visible ? { ...edge, target: visible } : edge;
+      }),
+    [edges, hiddenIds],
+  );
+
+  const descendantCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const childrenOf = new Map<string, string[]>();
+    for (const edge of edges) {
+      if (isBranch(edge)) {
+        childrenOf.set(edge.source, [
+          ...(childrenOf.get(edge.source) ?? []),
+          edge.target,
+        ]);
+      }
+    }
+    const count = (id: string): number => {
+      const total = (childrenOf.get(id) ?? []).reduce(
+        (sum, kid) => sum + 1 + count(kid),
+        0,
+      );
+      counts.set(id, total);
+      return total;
+    };
+    for (const node of nodes) if (!counts.has(node.id)) count(node.id);
+    return counts;
+  }, [nodes, edges]);
 
   // Hovering wins, then a selected thread, then the one being drawn.
   const focusEdge =
@@ -99,7 +190,20 @@ function MindMapCanvas() {
 
   const context = useMemo(
     () => ({
-      openNotes: setNotesNodeId,
+      openNotes: (id: string) => setDetails({ kind: "bubble", id }),
+      openThreadNotes: (id: string) => setDetails({ kind: "thread", id }),
+      toggleCollapse: (id: string) =>
+        setNodes((current) =>
+          current.map((node) =>
+            node.id === id
+              ? {
+                  ...node,
+                  data: { ...node.data, collapsed: !node.data.collapsed },
+                }
+              : node,
+          ),
+        ),
+      descendantCounts,
       startLink: (originId: string) => setLinking({ originId }),
       addToThread: (edgeId: string) => {
         const edge = getEdge(edgeId);
@@ -110,14 +214,49 @@ function MindMapCanvas() {
       linkOrigin: linking?.originId ?? null,
       focusEdgeId: focusEdge?.id ?? null,
       focusNodeIds: focusEdge ? new Set(getThreadNodeIds(focusEdge)) : null,
+      dropTargetId,
     }),
-    [linking, focusEdge, getEdge, deleteElements],
+    [
+      linking,
+      focusEdge,
+      dropTargetId,
+      descendantCounts,
+      getEdge,
+      deleteElements,
+      setNodes,
+    ],
   );
 
   useEffect(() => {
-    const timeout = setTimeout(() => saveMap(nodes, edges), SAVE_DELAY_MS);
+    const timeout = setTimeout(() => saveMap(savedMap), SAVE_DELAY_MS);
     return () => clearTimeout(timeout);
-  }, [nodes, edges]);
+  }, [savedMap]);
+
+  // ⌘Z / Ctrl+Z undo, ⇧⌘Z / Ctrl+Y redo, ⌘K or / to search. Typing in a text
+  // box keeps the browser's own undo for that text.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const typing = (event.target as HTMLElement).closest(
+        "input, textarea, select, [contenteditable='true']",
+      );
+      const key = event.key.toLowerCase();
+      const mod = event.metaKey || event.ctrlKey;
+
+      if ((mod && key === "k") || (!typing && key === "/")) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      } else if (!typing && mod && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      } else if (!typing && mod && key === "y") {
+        event.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo]);
 
   useEffect(() => {
     if (!linking) return;
@@ -192,7 +331,13 @@ function MindMapCanvas() {
       );
     }
 
-    if (notesNodeId && deletedIds.has(notesNodeId)) setNotesNodeId(null);
+    if (
+      details &&
+      (deletedIds.has(details.id) ||
+        deletedEdges.some((edge) => edge.id === details.id))
+    ) {
+      setDetails(null);
+    }
     if (linking && deletedEdges.some((edge) => edge.id === linking.threadId)) {
       setLinking(null);
     }
@@ -267,14 +412,139 @@ function MindMapCanvas() {
     );
   }
 
+  // Dragging a bubble onto another one moves it, and its branch, under that bubble.
+  const onNodeDragStart: OnNodeDrag<BubbleNode> = () => {
+    dragStart.current = { nodes: getNodes(), edges: getEdges() };
+  };
+
+  const onNodeDrag: OnNodeDrag<BubbleNode> = (_, dragged, draggedNodes) => {
+    if (draggedNodes.length !== 1 || dragged.data.bubbleClass === "root") {
+      return;
+    }
+    const edges = getEdges();
+    const undroppable = getUndroppableIds(dragged.id, edges);
+    const currentParent = edges.find(
+      (edge) => isBranch(edge) && edge.target === dragged.id,
+    )?.source;
+    const size = BUBBLE_CLASSES[dragged.data.bubbleClass].size;
+    const center = {
+      x: dragged.position.x + size / 2,
+      y: dragged.position.y + size / 2,
+    };
+
+    const target = getNodes().find((node) => {
+      if (node.hidden || undroppable.has(node.id) || node.id === currentParent)
+        return false;
+      const radius = BUBBLE_CLASSES[node.data.bubbleClass].size / 2;
+      return (
+        Math.hypot(
+          node.position.x + radius - center.x,
+          node.position.y + radius - center.y,
+        ) < radius
+      );
+    });
+    setDropTargetId(target?.id ?? null);
+  };
+
+  const onNodeDragStop: OnNodeDrag<BubbleNode> = (_, dragged) => {
+    const targetId = dropTargetId;
+    const before = dragStart.current;
+    setDropTargetId(null);
+    dragStart.current = null;
+    if (!targetId || !before) return;
+
+    const moved = moveBranch(nodes, edges, dragged.id, targetId);
+    setNodes(moved.nodes);
+    setEdges(moved.edges);
+
+    const targetLabel = getNode(targetId)?.data.label || "Untitled";
+    toast(
+      `Moved “${dragged.data.label || "Untitled"}” under “${targetLabel}”`,
+      {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            setNodes(before.nodes);
+            setEdges(before.edges);
+          },
+        },
+      },
+    );
+  };
+
+  // Search: open any collapsed branch the bubble is in, then fly to it.
+  function reveal(nodeId: string) {
+    const ancestors = new Set<string>();
+    for (let id = getParentId(nodeId, edges); id; id = getParentId(id, edges)) {
+      ancestors.add(id);
+    }
+    setNodes((current) =>
+      current.map((node) => ({
+        ...node,
+        selected: node.id === nodeId,
+        data:
+          ancestors.has(node.id) && node.data.collapsed
+            ? { ...node.data, collapsed: false }
+            : node.data,
+      })),
+    );
+    // Wait a frame so newly shown bubbles are measured before zooming.
+    requestAnimationFrame(() =>
+      fitView({ nodes: [{ id: nodeId }], duration: 500, maxZoom: 1.2 }),
+    );
+  }
+
+  function tidy() {
+    const targets = tidyLayout(nodes, edges, "root");
+    const starts = new Map(nodes.map((node) => [node.id, node.position]));
+    const startedAt = performance.now();
+
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - startedAt) / TIDY_MS);
+      const eased = 1 - (1 - t) ** 3;
+      setNodes((current) =>
+        current.map((node) => {
+          const from = starts.get(node.id);
+          const to = targets.get(node.id);
+          if (!from || !to) return node;
+          return {
+            ...node,
+            position: {
+              x: from.x + (to.x - from.x) * eased,
+              y: from.y + (to.y - from.y) * eased,
+            },
+          };
+        }),
+      );
+      if (t < 1) requestAnimationFrame(frame);
+      else fitView({ duration: 400, maxZoom: 1 });
+    };
+    requestAnimationFrame(frame);
+  }
+
+  function replaceMap(map: SavedMap<BubbleNode>, message: string) {
+    setNodes(map.nodes);
+    setEdges(map.edges);
+    setDetails(null);
+    setLinking(null);
+    requestAnimationFrame(() => fitView({ duration: 400, maxZoom: 1 }));
+    toast(message, { action: { label: "Undo", onClick: undo } });
+  }
+
+  async function handleImport(file: File) {
+    const map = await importMap<BubbleNode>(file);
+    if (map) replaceMap(map, "Backup imported");
+    else toast.error("That file isn't a Mind Web Chart backup");
+  }
+
   const originLabel = linking ? getNode(linking.originId)?.data.label : null;
 
   return (
     <MindMapContext value={context}>
       <div className="relative h-full">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={displayNodes}
+          edges={displayEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onBeforeDelete={onBeforeDelete}
@@ -283,6 +553,9 @@ function MindMapCanvas() {
           onPaneClick={() => setLinking(null)}
           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDrag={onNodeDrag}
+          onNodeDragStop={onNodeDragStop}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           nodesConnectable={false}
@@ -297,10 +570,26 @@ function MindMapCanvas() {
           <Controls showInteractive={false} />
         </ReactFlow>
 
+        <Toolbar
+          nodes={nodes}
+          searchRef={searchRef}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
+          onPick={reveal}
+          onTidy={tidy}
+          onExport={() => exportMap(savedMap)}
+          onImport={handleImport}
+          onClear={() =>
+            replaceMap({ nodes: initialNodes, edges: [] }, "Map cleared")
+          }
+        />
+
         {linking && (
           <div
             role="status"
-            className="border-border bg-card text-card-foreground absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full border py-2 pr-2 pl-4 text-sm shadow-lg"
+            className="border-border bg-card text-card-foreground absolute top-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full border py-2 pr-2 pl-4 text-sm shadow-lg lg:top-4"
           >
             <span>
               {linking.threadId
@@ -317,11 +606,18 @@ function MindMapCanvas() {
           </div>
         )}
 
-        {notesNodeId && (
+        {details?.kind === "bubble" && (
           <NotesPanel
-            key={notesNodeId}
-            nodeId={notesNodeId}
-            onClose={() => setNotesNodeId(null)}
+            key={details.id}
+            nodeId={details.id}
+            onClose={() => setDetails(null)}
+          />
+        )}
+        {details?.kind === "thread" && (
+          <ThreadPanel
+            key={details.id}
+            edgeId={details.id}
+            onClose={() => setDetails(null)}
           />
         )}
 
