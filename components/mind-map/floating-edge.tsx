@@ -4,8 +4,9 @@ import {
   type EdgeProps,
   type InternalNode,
 } from "@xyflow/react";
+import { useMindMap } from "./mind-map-context";
 
-function getCircle(node: InternalNode) {
+export function getCircle(node: InternalNode) {
   const radius = (node.measured.width ?? 0) / 2;
   return {
     x: node.internals.positionAbsolute.x + radius,
@@ -18,6 +19,7 @@ function getCircle(node: InternalNode) {
 export default function FloatingEdge({ id, source, target }: EdgeProps) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
+  const { focusEdgeId } = useMindMap();
 
   if (!sourceNode || !targetNode) return null;
 
@@ -35,7 +37,13 @@ export default function FloatingEdge({ id, source, target }: EdgeProps) {
     <BaseEdge
       id={id}
       path={path}
-      style={{ stroke: "var(--muted-foreground)", strokeWidth: 2 }}
+      style={{
+        stroke: "var(--muted-foreground)",
+        strokeWidth: 2,
+        // Fade branches back while a connector thread is in focus.
+        opacity: focusEdgeId ? 0.15 : 1,
+        transition: "opacity 150ms",
+      }}
     />
   );
 }

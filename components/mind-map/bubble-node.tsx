@@ -6,13 +6,14 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { NotebookPen, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import { Link2, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
+import { useState, type ComponentProps } from "react";
 import {
   BUBBLE_CLASSES,
   MAX_LABEL_LENGTH,
   type BubbleClass,
 } from "@/lib/mind-map/bubble-classes";
+import { BRANCH_EDGE, getParentId, isBranch } from "@/lib/mind-map/graph";
 import { getChildPosition } from "@/lib/mind-map/layout";
 import { cn } from "@/lib/utils";
 import { useMindMap } from "./mind-map-context";
@@ -33,6 +34,19 @@ function getCenter(node: BubbleNode) {
   return { x: node.position.x + size / 2, y: node.position.y + size / 2 };
 }
 
+function ActionButton({ className, ...props }: ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "nodrag border-border bg-background text-foreground flex size-7 items-center justify-center rounded-full border shadow-md transition-transform hover:scale-110",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 export default function BubbleNodeView({
   id,
   data,
@@ -46,22 +60,19 @@ export default function BubbleNodeView({
     updateNodeData,
     deleteElements,
   } = useReactFlow<BubbleNode, Edge>();
-  const { openNotes } = useMindMap();
+  const { openNotes, startLink, linkOrigin, focusNodeIds } = useMindMap();
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
   const config = BUBBLE_CLASSES[data.bubbleClass];
   const isRoot = data.bubbleClass === "root";
   const hasNote = Boolean(data.note?.trim());
-  // Hover on desktop; tap-to-select on touch screens, which have no hover.
-  const actionVisibility = selected
-    ? "opacity-100"
-    : "opacity-0 group-hover:opacity-100";
+  const isLinkSource = linkOrigin === id;
 
   function addChild() {
     const parent = getNode(id);
     if (!parent) return;
 
     const edges = getEdges();
-    const grandparentId = edges.find((edge) => edge.target === id)?.source;
+    const grandparentId = getParentId(id, edges);
     const grandparent = grandparentId ? getNode(grandparentId) : undefined;
     const childClass = config.childClass;
     const childId = crypto.randomUUID();
@@ -73,7 +84,9 @@ export default function BubbleNodeView({
         parentCenter: getCenter(parent),
         parentSize: config.size,
         grandparentCenter: grandparent ? getCenter(grandparent) : null,
-        siblingCount: edges.filter((edge) => edge.source === id).length,
+        siblingCount: edges.filter(
+          (edge) => isBranch(edge) && edge.source === id,
+        ).length,
         childSize: BUBBLE_CLASSES[childClass].size,
       }),
       data: { label: "", bubbleClass: childClass, isNew: true },
@@ -82,7 +95,10 @@ export default function BubbleNodeView({
       id: `${id}->${childId}`,
       source: id,
       target: childId,
-      type: "floating",
+      type: BRANCH_EDGE,
+      // Branch lines go away with their bubble; they can't be picked on their own.
+      selectable: false,
+      focusable: false,
     });
   }
 
@@ -103,9 +119,12 @@ export default function BubbleNodeView({
       style={{ width: config.size, height: config.size }}
       onDoubleClick={() => !isRoot && setIsEditing(true)}
       className={cn(
-        "group relative flex items-center justify-center rounded-full border-2 p-3 text-center leading-tight break-words transition-shadow",
+        "group relative flex items-center justify-center rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity]",
         config.className,
         selected && "ring-ring/50 ring-4",
+        isLinkSource && "ring-4 ring-emerald-500",
+        linkOrigin && !isLinkSource && "cursor-crosshair",
+        focusNodeIds && !focusNodeIds.has(id) && "opacity-25",
       )}
     >
       {/* Edges need handles to attach to; the floating edge ignores where they sit. */}
@@ -151,45 +170,58 @@ export default function BubbleNodeView({
       )}
 
       {hasNote && (
-        <button
-          type="button"
+        <ActionButton
           onClick={() => openNotes(id)}
           aria-label={`Open notes for ${data.label}`}
           title="Has notes"
-          className="nodrag border-border bg-background text-foreground absolute top-[7%] right-[7%] flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm"
+          className="absolute top-[7%] right-[7%] size-6 translate-x-1/2 -translate-y-1/2 shadow-sm"
         >
           <NotebookPen className="size-3.5" aria-hidden="true" />
-        </button>
+        </ActionButton>
       )}
 
-      {!isEditing && (
-        <button
-          type="button"
-          onClick={() => openNotes(id)}
-          aria-label={`Edit details for ${data.label}`}
-          title="Notes and class"
+      {!isEditing && !linkOrigin && (
+        <div
           className={cn(
-            "nodrag border-border bg-background text-foreground absolute bottom-[7%] left-[7%] flex size-7 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border shadow-md transition-opacity hover:scale-110",
-            actionVisibility,
+            "absolute top-full left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1 transition-opacity",
+            // Hover on desktop; tap-to-select on touch screens, which have no hover.
+            selected
+              ? "opacity-100"
+              : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100",
           )}
         >
-          <Pencil className="size-3.5" aria-hidden="true" />
-        </button>
-      )}
-
-      {!isEditing && (
-        <button
-          type="button"
-          onClick={addChild}
-          aria-label={`Add a bubble to ${data.label}`}
-          title="Add a bubble"
-          className={cn(
-            "nodrag border-border bg-background text-foreground absolute right-[7%] bottom-[7%] flex size-7 translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border shadow-md transition-opacity hover:scale-110",
-            actionVisibility,
+          <ActionButton
+            onClick={addChild}
+            aria-label={`Add a bubble to ${data.label}`}
+            title="Add a bubble"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+          </ActionButton>
+          <ActionButton
+            onClick={() => startLink(id)}
+            aria-label={`Connect ${data.label} to another bubble`}
+            title="Connect to another bubble"
+          >
+            <Link2 className="size-4" aria-hidden="true" />
+          </ActionButton>
+          <ActionButton
+            onClick={() => openNotes(id)}
+            aria-label={`Edit details for ${data.label}`}
+            title="Notes and class"
+          >
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </ActionButton>
+          {!isRoot && (
+            <ActionButton
+              onClick={() => deleteElements({ nodes: [{ id }] })}
+              aria-label={`Delete ${data.label}`}
+              title="Delete bubble"
+              className="hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+            </ActionButton>
           )}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-        </button>
+        </div>
       )}
     </div>
   );

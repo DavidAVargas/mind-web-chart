@@ -1,4 +1,4 @@
-import MindMap from "@/components/mind-map/mind-map";
+import MindMap from "@/components/mind-map/mind-map-client";
 
 export default function Home() {
   return (
