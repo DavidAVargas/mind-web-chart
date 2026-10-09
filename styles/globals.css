@@ -82,3 +82,14 @@ input[type="search"]::-webkit-search-cancel-button {
     }
   }
 }
+
+/* Point React Flow's built-in colors at our theme so its controls follow light/dark mode. */
+.react-flow {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-dots-color: var(--border);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-color-hover: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+}
