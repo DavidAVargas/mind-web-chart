@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "storybook-mcp": {
+      "type": "http",
+      "url": "http://localhost:6006/mcp"
+    },
+    "agentation": {
+      "command": "npx",
+      "args": ["-y", "agentation-mcp", "server"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
