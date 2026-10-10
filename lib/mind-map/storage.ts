@@ -1,4 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
+import { migrateNodes } from "./migrate";
 
 /** Bump the version if the saved shape ever changes, so old saves can be migrated. */
 const STORAGE_KEY = "mind-web-chart:v1";
@@ -11,7 +12,7 @@ export function parseSavedMap<N extends Node>(
 ): SavedMap<N> | null {
   const saved = value as Partial<SavedMap<N>> | null;
   return saved && Array.isArray(saved.nodes) && Array.isArray(saved.edges)
-    ? { nodes: saved.nodes, edges: saved.edges }
+    ? { nodes: migrateNodes(saved.nodes, saved.edges), edges: saved.edges }
     : null;
 }
 

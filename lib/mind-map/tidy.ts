@@ -1,8 +1,8 @@
 import type { Edge, Node, XYPosition } from "@xyflow/react";
-import { BUBBLE_CLASSES, type BubbleClass } from "./bubble-classes";
+import { getBubbleSize } from "./bubble-kinds";
 import { isBranch } from "./graph";
 
-type TidyNode = Node<{ bubbleClass: BubbleClass; collapsed?: boolean }>;
+type TidyNode = Node<{ depth: number; collapsed?: boolean }>;
 
 /** Space between rings of bubbles. */
 const RING_GAP = 70;
@@ -10,7 +10,7 @@ const RING_GAP = 70;
 const NEIGHBOUR_GAP = 30;
 
 function sizeOf(node: TidyNode) {
-  return BUBBLE_CLASSES[node.data.bubbleClass].size;
+  return getBubbleSize(node.data);
 }
 
 /**

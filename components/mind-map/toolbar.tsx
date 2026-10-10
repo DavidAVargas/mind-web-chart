@@ -16,7 +16,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { BUBBLE_CLASSES } from "@/lib/mind-map/bubble-classes";
+import { BUBBLE_KINDS } from "@/lib/mind-map/bubble-kinds";
 import { cn } from "@/lib/utils";
 import type { BubbleNode } from "./bubble-node";
 
@@ -223,7 +223,7 @@ export default function Toolbar({
                     {node.data.label || "Untitled"}
                   </span>
                   <span className="text-muted-foreground shrink-0 text-xs">
-                    {BUBBLE_CLASSES[node.data.bubbleClass].label}
+                    {BUBBLE_KINDS[node.data.kind].label}
                   </span>
                 </button>
               </li>

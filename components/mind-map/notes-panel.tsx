@@ -2,11 +2,11 @@ import { useNodesData, useReactFlow, type Edge } from "@xyflow/react";
 import { X } from "lucide-react";
 import type { BubbleNode } from "./bubble-node";
 import {
-  BUBBLE_CLASSES,
+  BUBBLE_KINDS,
   MAX_LABEL_LENGTH,
-  PICKABLE_CLASSES,
-  type BubbleClass,
-} from "@/lib/mind-map/bubble-classes";
+  PICKABLE_KINDS,
+  type BubbleKind,
+} from "@/lib/mind-map/bubble-kinds";
 
 /** Side panel on desktop, bottom sheet on phones. */
 export const PANEL_CLASS =
@@ -21,27 +21,12 @@ export default function NotesPanel({
   onClose: () => void;
 }) {
   const node = useNodesData<BubbleNode>(nodeId);
-  const { updateNodeData, updateNode } = useReactFlow<BubbleNode, Edge>();
+  const { updateNodeData } = useReactFlow<BubbleNode, Edge>();
 
   if (!node) return null;
 
   const { data } = node;
-  const isRoot = data.bubbleClass === "root";
-
-  function changeClass(bubbleClass: BubbleClass) {
-    // Keep the bubble centered where it is while its size changes.
-    const shift =
-      (BUBBLE_CLASSES[data.bubbleClass].size -
-        BUBBLE_CLASSES[bubbleClass].size) /
-      2;
-    updateNode(nodeId, (current) => ({
-      position: {
-        x: current.position.x + shift,
-        y: current.position.y + shift,
-      },
-      data: { ...current.data, bubbleClass },
-    }));
-  }
+  const isRoot = data.kind === "root";
 
   return (
     <aside
@@ -51,7 +36,7 @@ export default function NotesPanel({
     >
       <div className="flex items-center justify-between">
         <h2 className="text-muted-foreground text-sm font-semibold">
-          {BUBBLE_CLASSES[data.bubbleClass].label}
+          {BUBBLE_KINDS[data.kind].label}
         </h2>
         <button
           type="button"
@@ -78,18 +63,37 @@ export default function NotesPanel({
 
       {!isRoot && (
         <label className="flex flex-col gap-1 text-sm font-medium">
-          Class
+          Type
           <select
-            value={data.bubbleClass}
-            onChange={(event) => changeClass(event.target.value as BubbleClass)}
+            value={data.kind}
+            onChange={(event) =>
+              updateNodeData(nodeId, { kind: event.target.value as BubbleKind })
+            }
             className="border-input bg-background rounded-md border px-3 py-2 text-base font-normal"
           >
-            {PICKABLE_CLASSES.map((bubbleClass) => (
-              <option key={bubbleClass} value={bubbleClass}>
-                {BUBBLE_CLASSES[bubbleClass].label}
+            {PICKABLE_KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {BUBBLE_KINDS[kind].label}
               </option>
             ))}
           </select>
+          <span className="text-muted-foreground text-xs font-normal">
+            {BUBBLE_KINDS[data.kind].hint}
+          </span>
+        </label>
+      )}
+
+      {data.kind === "action" && (
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={Boolean(data.done)}
+            onChange={(event) =>
+              updateNodeData(nodeId, { done: event.target.checked })
+            }
+            className="size-4 accent-emerald-500"
+          />
+          Done
         </label>
       )}
 

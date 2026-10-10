@@ -1,33 +1,22 @@
 import type { Edge, Node } from "@xyflow/react";
-import { BUBBLE_CLASSES, type BubbleClass } from "./bubble-classes";
+import { getBubbleCenter, getBubbleSize } from "./bubble-kinds";
 import { BRANCH_EDGE, getBranchIds, getParentId, isBranch } from "./graph";
 import { getChildPosition } from "./layout";
 
-type ClassedNode = Node<{ bubbleClass: BubbleClass }>;
-
-function getCenter(node: ClassedNode) {
-  const size = BUBBLE_CLASSES[node.data.bubbleClass].size;
-  return { x: node.position.x + size / 2, y: node.position.y + size / 2 };
-}
+type DepthNode = Node<{ depth: number }>;
 
 /** Bubbles a branch can't be dropped on: itself and everything under it. */
 export function getUndroppableIds(nodeId: string, edges: Edge[]) {
   return getBranchIds([nodeId], edges);
 }
 
-/** A bubble's class one level below its parent. "None" bubbles stay "None". */
-function classUnder(parentClass: BubbleClass, current: BubbleClass) {
-  if (current === "none") return current;
-  if (parentClass === "none") return current;
-  return BUBBLE_CLASSES[parentClass].childClass;
-}
-
 /**
  * Moves a bubble, and everything branching off it, under a new parent.
  * The bubble settles beside its new parent, its children keep their places
- * relative to it, and classes shift to match the new depth.
+ * relative to it, and sizes follow the branch's new depth. Kinds stay as
+ * they are.
  */
-export function moveBranch<N extends ClassedNode>(
+export function moveBranch<N extends DepthNode>(
   nodes: N[],
   edges: Edge[],
   nodeId: string,
@@ -39,37 +28,22 @@ export function moveBranch<N extends ClassedNode>(
   if (!moving || !newParent) return { nodes, edges };
 
   const branchIds = getBranchIds([nodeId], edges);
-
-  // New classes, walking down from the moved bubble.
-  const newClasses = new Map<string, BubbleClass>();
-  const queue: [string, BubbleClass][] = [[nodeId, newParent.data.bubbleClass]];
-  while (queue.length) {
-    const [id, parentClass] = queue.shift()!;
-    const node = byId.get(id);
-    if (!node) continue;
-    const bubbleClass = classUnder(parentClass, node.data.bubbleClass);
-    newClasses.set(id, bubbleClass);
-    for (const edge of edges) {
-      if (isBranch(edge) && edge.source === id) {
-        queue.push([edge.target, bubbleClass]);
-      }
-    }
-  }
+  const depthShift = newParent.data.depth + 1 - moving.data.depth;
 
   // Where the moved bubble lands, and how far its whole branch shifts.
   const grandparentId = getParentId(newParentId, edges);
   const grandparent = grandparentId ? byId.get(grandparentId) : undefined;
-  const movedSize = BUBBLE_CLASSES[newClasses.get(nodeId)!].size;
+  const movedSize = getBubbleSize({ depth: newParent.data.depth + 1 });
   const landing = getChildPosition({
-    parentCenter: getCenter(newParent),
-    parentSize: BUBBLE_CLASSES[newParent.data.bubbleClass].size,
-    grandparentCenter: grandparent ? getCenter(grandparent) : null,
+    parentCenter: getBubbleCenter(newParent),
+    parentSize: getBubbleSize(newParent.data),
+    grandparentCenter: grandparent ? getBubbleCenter(grandparent) : null,
     siblingCount: edges.filter(
       (edge) => isBranch(edge) && edge.source === newParentId,
     ).length,
     childSize: movedSize,
   });
-  const oldCenter = getCenter(moving);
+  const oldCenter = getBubbleCenter(moving);
   const shift = {
     x: landing.x + movedSize / 2 - oldCenter.x,
     y: landing.y + movedSize / 2 - oldCenter.y,
@@ -78,16 +52,16 @@ export function moveBranch<N extends ClassedNode>(
   return {
     nodes: nodes.map((node) => {
       if (!branchIds.has(node.id)) return node;
-      const bubbleClass = newClasses.get(node.id) ?? node.data.bubbleClass;
-      const center = getCenter(node);
-      const size = BUBBLE_CLASSES[bubbleClass].size;
+      const depth = node.data.depth + depthShift;
+      const center = getBubbleCenter(node);
+      const size = getBubbleSize({ depth });
       return {
         ...node,
         position: {
           x: center.x + shift.x - size / 2,
           y: center.y + shift.y - size / 2,
         },
-        data: { ...node.data, bubbleClass },
+        data: { ...node.data, depth },
       };
     }),
     edges: [

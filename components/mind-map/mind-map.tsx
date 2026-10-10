@@ -25,7 +25,7 @@ import NotesPanel from "./notes-panel";
 import ThreadPanel from "./thread-panel";
 import Toolbar from "./toolbar";
 import { useHistory } from "./use-history";
-import { BUBBLE_CLASSES } from "@/lib/mind-map/bubble-classes";
+import { getBubbleCenter, getBubbleSize } from "@/lib/mind-map/bubble-kinds";
 import {
   BRANCH_EDGE,
   CONNECTOR_EDGE,
@@ -52,7 +52,7 @@ const edgeTypes = {
   [CONNECTOR_EDGE]: ConnectorEdge,
 };
 
-const ROOT_SIZE = BUBBLE_CLASSES.root.size;
+const ROOT_SIZE = getBubbleSize({ depth: 0 });
 
 const initialNodes: BubbleNode[] = [
   {
@@ -60,7 +60,7 @@ const initialNodes: BubbleNode[] = [
     type: "bubble",
     // Positions are top-left corners, so offset by half the size to center it on 0,0.
     position: { x: -ROOT_SIZE / 2, y: -ROOT_SIZE / 2 },
-    data: { label: "My Mind", bubbleClass: "root" },
+    data: { label: "My Mind", kind: "root", depth: 0 },
     deletable: false,
   },
 ];
@@ -418,7 +418,7 @@ function MindMapCanvas() {
   };
 
   const onNodeDrag: OnNodeDrag<BubbleNode> = (_, dragged, draggedNodes) => {
-    if (draggedNodes.length !== 1 || dragged.data.bubbleClass === "root") {
+    if (draggedNodes.length !== 1 || dragged.data.kind === "root") {
       return;
     }
     const edges = getEdges();
@@ -426,21 +426,15 @@ function MindMapCanvas() {
     const currentParent = edges.find(
       (edge) => isBranch(edge) && edge.target === dragged.id,
     )?.source;
-    const size = BUBBLE_CLASSES[dragged.data.bubbleClass].size;
-    const center = {
-      x: dragged.position.x + size / 2,
-      y: dragged.position.y + size / 2,
-    };
+    const center = getBubbleCenter(dragged);
 
     const target = getNodes().find((node) => {
       if (node.hidden || undroppable.has(node.id) || node.id === currentParent)
         return false;
-      const radius = BUBBLE_CLASSES[node.data.bubbleClass].size / 2;
+      const nodeCenter = getBubbleCenter(node);
       return (
-        Math.hypot(
-          node.position.x + radius - center.x,
-          node.position.y + radius - center.y,
-        ) < radius
+        Math.hypot(nodeCenter.x - center.x, nodeCenter.y - center.y) <
+        getBubbleSize(node.data) / 2
       );
     });
     setDropTargetId(target?.id ?? null);

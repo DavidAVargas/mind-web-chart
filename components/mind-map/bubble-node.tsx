@@ -7,6 +7,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import {
+  Check,
   ChevronsDownUp,
   Link2,
   NotebookPen,
@@ -16,10 +17,13 @@ import {
 } from "lucide-react";
 import { useState, type ComponentProps } from "react";
 import {
-  BUBBLE_CLASSES,
+  BUBBLE_KINDS,
+  getBubbleCenter,
+  getBubbleSize,
+  getDepthStyle,
   MAX_LABEL_LENGTH,
-  type BubbleClass,
-} from "@/lib/mind-map/bubble-classes";
+  type BubbleKind,
+} from "@/lib/mind-map/bubble-kinds";
 import { BRANCH_EDGE, getParentId, isBranch } from "@/lib/mind-map/graph";
 import { getChildPosition } from "@/lib/mind-map/layout";
 import { cn } from "@/lib/utils";
@@ -27,7 +31,11 @@ import { useMindMap } from "./mind-map-context";
 
 export type BubbleData = {
   label: string;
-  bubbleClass: BubbleClass;
+  kind: BubbleKind;
+  /** Steps out from My Mind; sets the bubble's size. */
+  depth: number;
+  /** For actions: whether it's been done. */
+  done?: boolean;
   /** Longer, optional detail shown in the notes panel. */
   note?: string;
   /** Everything branching off this bubble is hidden. */
@@ -37,11 +45,6 @@ export type BubbleData = {
 };
 
 export type BubbleNode = Node<BubbleData, "bubble">;
-
-function getCenter(node: BubbleNode) {
-  const size = BUBBLE_CLASSES[node.data.bubbleClass].size;
-  return { x: node.position.x + size / 2, y: node.position.y + size / 2 };
-}
 
 function ActionButton({ className, ...props }: ComponentProps<"button">) {
   return (
@@ -80,8 +83,11 @@ export default function BubbleNodeView({
   } = useMindMap();
   const descendants = descendantCounts.get(id) ?? 0;
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
-  const config = BUBBLE_CLASSES[data.bubbleClass];
-  const isRoot = data.bubbleClass === "root";
+  const kind = BUBBLE_KINDS[data.kind];
+  const depthStyle = getDepthStyle(data.depth);
+  const Icon = kind.icon;
+  const isRoot = data.kind === "root";
+  const isAction = data.kind === "action";
   const hasNote = Boolean(data.note?.trim());
   const isLinkSource = linkOrigin === id;
 
@@ -94,22 +100,27 @@ export default function BubbleNodeView({
     const edges = getEdges();
     const grandparentId = getParentId(id, edges);
     const grandparent = grandparentId ? getNode(grandparentId) : undefined;
-    const childClass = config.childClass;
+    const childDepth = data.depth + 1;
     const childId = crypto.randomUUID();
 
     addNodes({
       id: childId,
       type: "bubble",
       position: getChildPosition({
-        parentCenter: getCenter(parent),
-        parentSize: config.size,
-        grandparentCenter: grandparent ? getCenter(grandparent) : null,
+        parentCenter: getBubbleCenter(parent),
+        parentSize: depthStyle.size,
+        grandparentCenter: grandparent ? getBubbleCenter(grandparent) : null,
         siblingCount: edges.filter(
           (edge) => isBranch(edge) && edge.source === id,
         ).length,
-        childSize: BUBBLE_CLASSES[childClass].size,
+        childSize: getBubbleSize({ depth: childDepth }),
       }),
-      data: { label: "", bubbleClass: childClass, isNew: true },
+      data: {
+        label: "",
+        kind: kind.childKind,
+        depth: childDepth,
+        isNew: true,
+      },
     });
     addEdges({
       id: `${id}->${childId}`,
@@ -136,11 +147,13 @@ export default function BubbleNodeView({
 
   return (
     <div
-      style={{ width: config.size, height: config.size }}
+      style={{ width: depthStyle.size, height: depthStyle.size }}
       onDoubleClick={() => !isRoot && setIsEditing(true)}
       className={cn(
-        "group relative flex items-center justify-center rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity,scale]",
-        config.className,
+        "group relative flex flex-col items-center justify-center gap-0.5 rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity,scale]",
+        kind.className,
+        depthStyle.text,
+        isAction && data.done && "opacity-60",
         selected && "ring-ring/50 ring-4",
         isLinkSource && "ring-4 ring-emerald-500",
         linkOrigin && !isLinkSource && "cursor-crosshair",
@@ -161,6 +174,13 @@ export default function BubbleNodeView({
         isConnectable={false}
         className="opacity-0"
       />
+
+      {Icon && (
+        <Icon
+          className={cn("shrink-0 opacity-70", depthStyle.icon)}
+          aria-hidden="true"
+        />
+      )}
 
       {isEditing ? (
         <input
@@ -184,10 +204,33 @@ export default function BubbleNodeView({
       ) : (
         <span
           title={data.label}
-          className={cn("line-clamp-3", !data.label && "opacity-50")}
+          className={cn(
+            "line-clamp-3",
+            !data.label && "opacity-50",
+            isAction && data.done && "line-through",
+          )}
         >
           {data.label || "Untitled"}
         </span>
+      )}
+
+      {isAction && (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={Boolean(data.done)}
+          aria-label={`Mark ${data.label} as ${data.done ? "not done" : "done"}`}
+          title={data.done ? "Done — tap to undo" : "Mark as done"}
+          onClick={() => updateNodeData(id, { done: !data.done })}
+          className={cn(
+            "nodrag absolute top-[7%] left-[7%] flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-500 shadow-sm transition-colors",
+            data.done
+              ? "bg-emerald-500 text-white"
+              : "bg-background text-transparent hover:text-emerald-500",
+          )}
+        >
+          <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+        </button>
       )}
 
       {dropTargetId === id && (
