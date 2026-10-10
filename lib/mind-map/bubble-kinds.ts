@@ -26,6 +26,8 @@ type BubbleKindConfig = {
   /** Short hint shown when picking a kind. */
   hint: string;
   icon: LucideIcon | null;
+  /** Solid color for the mini-map and the types legend. */
+  color: string;
   /** Tailwind classes for the bubble's fill, border and text. */
   className: string;
   /** Kind a new bubble gets when added off this one. */
@@ -37,14 +39,17 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "My Mind",
     hint: "The center of everything",
     icon: null,
+    color: "var(--foreground)",
+    // Black in light mode, white in dark mode, so it stands apart from every type.
     className:
-      "bg-brand-600 border-brand-700 text-white font-semibold shadow-lg",
+      "bg-foreground border-foreground text-background font-semibold shadow-lg",
     childKind: "area",
   },
   area: {
     label: "Area",
     hint: "A part of your life, like Dreams, Career or Health",
     icon: Layers,
+    color: "#9e77ed",
     className:
       "bg-brand-100 border-brand-500 text-brand-900 font-semibold dark:bg-brand-900 dark:border-brand-400 dark:text-brand-50",
     childKind: "goal",
@@ -53,6 +58,7 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "Goal",
     hint: "Something you want",
     icon: Target,
+    color: "#0ea5e9",
     className:
       "bg-sky-100 border-sky-500 text-sky-950 font-medium dark:bg-sky-950 dark:border-sky-400 dark:text-sky-50",
     childKind: "blocker",
@@ -61,6 +67,7 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "Blocker",
     hint: "What's in the way",
     icon: Ban,
+    color: "#f43f5e",
     className:
       "bg-rose-100 border-rose-500 text-rose-950 font-medium dark:bg-rose-950 dark:border-rose-400 dark:text-rose-50",
     childKind: "root-cause",
@@ -69,6 +76,7 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "Root cause",
     hint: "Why the blocker exists",
     icon: CircleHelp,
+    color: "#f59e0b",
     className:
       "bg-amber-100 border-amber-500 text-amber-950 font-medium dark:bg-amber-950 dark:border-amber-400 dark:text-amber-50",
     childKind: "action",
@@ -77,6 +85,7 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "Action",
     hint: "A step you can take — tick it off when it's done",
     icon: Footprints,
+    color: "#10b981",
     className:
       "bg-emerald-100 border-emerald-500 text-emerald-950 font-medium dark:bg-emerald-950 dark:border-emerald-400 dark:text-emerald-50",
     childKind: "action",
@@ -85,6 +94,7 @@ export const BUBBLE_KINDS: Record<BubbleKind, BubbleKindConfig> = {
     label: "Thought",
     hint: "Anything — for free brainstorming",
     icon: Lightbulb,
+    color: "#a3a3a3",
     className:
       "bg-background border-dashed border-muted-foreground text-foreground",
     childKind: "thought",

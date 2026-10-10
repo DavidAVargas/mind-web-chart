@@ -93,3 +93,13 @@ input[type="search"]::-webkit-search-cancel-button {
   --xy-controls-button-color-hover: var(--foreground);
   --xy-controls-button-border-color: var(--border);
 }
+
+.react-flow {
+  --xy-minimap-background-color: var(--card);
+  --xy-minimap-mask-background-color: color-mix(
+    in oklch,
+    var(--background) 60%,
+    transparent
+  );
+  --xy-minimap-mask-stroke-color: var(--border);
+}

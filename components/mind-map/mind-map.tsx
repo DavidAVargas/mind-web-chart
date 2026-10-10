@@ -5,6 +5,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -21,11 +22,16 @@ import BubbleNodeView, { type BubbleNode } from "./bubble-node";
 import ConnectorEdge from "./connector-edge";
 import FloatingEdge from "./floating-edge";
 import { MindMapContext } from "./mind-map-context";
+import LinkingChip from "./linking-chip";
 import NotesPanel from "./notes-panel";
 import ThreadPanel from "./thread-panel";
 import Toolbar from "./toolbar";
 import { useHistory } from "./use-history";
-import { getBubbleCenter, getBubbleSize } from "@/lib/mind-map/bubble-kinds";
+import {
+  BUBBLE_KINDS,
+  getBubbleCenter,
+  getBubbleSize,
+} from "@/lib/mind-map/bubble-kinds";
 import {
   BRANCH_EDGE,
   CONNECTOR_EDGE,
@@ -86,6 +92,15 @@ type Linking = {
   originId: string;
   /** Set once the thread exists, so later taps add to it. */
   threadId?: string;
+  /**
+   * Keep adding until Done. Off for a fresh 🔗, which connects one bubble
+   * and stops, so stray taps don't add links by mistake.
+   */
+  multi?: boolean;
+  /** Bubbles added so far in this round. */
+  added?: number;
+  /** After a single link: the bubble it went to, while Add more / Done shows. */
+  connectedTo?: string;
 };
 
 function MindMapCanvas() {
@@ -182,6 +197,11 @@ function MindMapCanvas() {
     return counts;
   }, [nodes, edges]);
 
+  const [selectedLink, setSelectedLink] = useState<{
+    threadId: string;
+    memberId: string;
+  } | null>(null);
+
   // Hovering wins, then a selected thread, then the one being drawn.
   const focusEdge =
     edges.find((edge) => edge.id === hoveredEdgeId && !isBranch(edge)) ??
@@ -207,13 +227,49 @@ function MindMapCanvas() {
       startLink: (originId: string) => setLinking({ originId }),
       addToThread: (edgeId: string) => {
         const edge = getEdge(edgeId);
-        if (edge) setLinking({ originId: edge.source, threadId: edge.id });
+        if (edge) {
+          setLinking({ originId: edge.source, threadId: edge.id, multi: true });
+        }
       },
       deleteThread: (edgeId: string) =>
         deleteElements({ edges: [{ id: edgeId }] }),
-      linkOrigin: linking?.originId ?? null,
+      // Only while picking bubbles; not while the "Connected" chip waits.
+      linkOrigin: linking && !linking.connectedTo ? linking.originId : null,
+      threadSelected: edges.some((edge) => edge.selected && !isBranch(edge)),
       focusEdgeId: focusEdge?.id ?? null,
-      focusNodeIds: focusEdge ? new Set(getThreadNodeIds(focusEdge)) : null,
+      focusNodeIds: !focusEdge
+        ? null
+        : focusEdge.selected && selectedLink?.threadId === focusEdge.id
+          ? // One link picked: just its two ends stay bright.
+            new Set([focusEdge.source, selectedLink.memberId])
+          : new Set(getThreadNodeIds(focusEdge)),
+      selectedLink,
+      selectLink: (threadId: string, memberId: string | null) =>
+        setSelectedLink(memberId ? { threadId, memberId } : null),
+      removeLink: (threadId: string, memberId: string) => {
+        const thread = getEdge(threadId);
+        if (!thread) return;
+        const members = getThreadMembers(thread).filter((m) => m !== memberId);
+        setSelectedLink(null);
+        if (!members.length) {
+          deleteElements({ edges: [{ id: threadId }] });
+          return;
+        }
+        setEdges((current) =>
+          current.map((edge) =>
+            edge.id === threadId
+              ? {
+                  ...edge,
+                  target: members[0],
+                  data: { ...edge.data, members },
+                }
+              : edge,
+          ),
+        );
+        toast("Removed that link", {
+          action: { label: "Undo", onClick: undo },
+        });
+      },
       dropTargetId,
     }),
     [
@@ -221,6 +277,10 @@ function MindMapCanvas() {
       focusEdge,
       dropTargetId,
       descendantCounts,
+      selectedLink,
+      edges,
+      undo,
+      setEdges,
       getEdge,
       deleteElements,
       setNodes,
@@ -261,7 +321,7 @@ function MindMapCanvas() {
   useEffect(() => {
     if (!linking) return;
     const stopOnEscape = (event: KeyboardEvent) =>
-      event.key === "Escape" && setLinking(null);
+      (event.key === "Escape" || event.key === "Enter") && setLinking(null);
     window.addEventListener("keydown", stopOnEscape);
     return () => window.removeEventListener("keydown", stopOnEscape);
   }, [linking]);
@@ -374,7 +434,8 @@ function MindMapCanvas() {
   // after that hangs another bubble off it. Tapping the origin again finishes.
   function linkTo(nodeId: string) {
     if (!linking) return;
-    if (nodeId === linking.originId) {
+    // The "Connected" chip is waiting for Add more or Done; a tap elsewhere ends it.
+    if (linking.connectedTo || nodeId === linking.originId) {
       setLinking(null);
       return;
     }
@@ -394,7 +455,7 @@ function MindMapCanvas() {
           color: THREAD_COLORS[threadCount % THREAD_COLORS.length],
         },
       });
-      setLinking({ ...linking, threadId });
+      setLinking({ ...linking, threadId, connectedTo: nodeId });
       return;
     }
 
@@ -410,6 +471,7 @@ function MindMapCanvas() {
           : edge,
       ),
     );
+    setLinking({ ...linking, added: (linking.added ?? 0) + 1 });
   }
 
   // Dragging a bubble onto another one moves it, and its branch, under that bubble.
@@ -531,7 +593,9 @@ function MindMapCanvas() {
     else toast.error("That file isn't a Mind Web Chart backup");
   }
 
-  const originLabel = linking ? getNode(linking.originId)?.data.label : null;
+  const linkOriginNode = linking
+    ? nodes.find((node) => node.id === linking.originId)
+    : undefined;
 
   return (
     <MindMapContext value={context}>
@@ -543,8 +607,23 @@ function MindMapCanvas() {
           onEdgesChange={onEdgesChange}
           onBeforeDelete={onBeforeDelete}
           onDelete={onDelete}
-          onNodeClick={(_, node) => linkTo(node.id)}
-          onPaneClick={() => setLinking(null)}
+          onNodeClick={(_, node) => {
+            if (linking) linkTo(node.id);
+            // With the details panel open, clicking another bubble shows its details.
+            else if (details) setDetails({ kind: "bubble", id: node.id });
+          }}
+          onEdgeClick={(_, edge) => {
+            if (selectedLink && selectedLink.threadId !== edge.id) {
+              setSelectedLink(null);
+            }
+            if (details && !isBranch(edge)) {
+              setDetails({ kind: "thread", id: edge.id });
+            }
+          }}
+          onPaneClick={() => {
+            setLinking(null);
+            setSelectedLink(null);
+          }}
           onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
           onEdgeMouseLeave={() => setHoveredEdgeId(null)}
           onNodeDragStart={onNodeDragStart}
@@ -553,6 +632,11 @@ function MindMapCanvas() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           nodesConnectable={false}
+          // A click with a little hand wobble still counts as a click, not a drag.
+          nodeClickDistance={5}
+          paneClickDistance={5}
+          // No dragging while connecting, so every tap on a bubble picks it.
+          nodesDraggable={!linking}
           fitView
           fitViewOptions={{ maxZoom: 1 }}
           minZoom={0.1}
@@ -562,6 +646,42 @@ function MindMapCanvas() {
         >
           <Background variant={BackgroundVariant.Dots} gap={24} />
           <Controls showInteractive={false} />
+          <MiniMap<BubbleNode>
+            pannable
+            zoomable
+            nodeColor={(node) => BUBBLE_KINDS[node.data.kind].color}
+            nodeStrokeWidth={0}
+            nodeBorderRadius={9999}
+            ariaLabel="Map overview"
+            // Too cramped on phones; pinch and drag cover it there.
+            className="max-sm:hidden"
+          />
+          {linking && linkOriginNode && (
+            <LinkingChip
+              origin={linkOriginNode}
+              step={
+                linking.connectedTo
+                  ? "connected"
+                  : linking.multi
+                    ? "multi"
+                    : "pick"
+              }
+              targetLabel={
+                linking.connectedTo
+                  ? getNode(linking.connectedTo)?.data.label
+                  : undefined
+              }
+              added={linking.added}
+              onAddMore={() =>
+                setLinking({
+                  originId: linking.originId,
+                  threadId: linking.threadId,
+                  multi: true,
+                })
+              }
+              onDone={() => setLinking(null)}
+            />
+          )}
         </ReactFlow>
 
         <Toolbar
@@ -579,26 +699,6 @@ function MindMapCanvas() {
             replaceMap({ nodes: initialNodes, edges: [] }, "Map cleared")
           }
         />
-
-        {linking && (
-          <div
-            role="status"
-            className="border-border bg-card text-card-foreground absolute top-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full border py-2 pr-2 pl-4 text-sm shadow-lg lg:top-4"
-          >
-            <span>
-              {linking.threadId
-                ? `Tap bubbles to add them to the “${originLabel || "Untitled"}” thread`
-                : `Tap a bubble to connect it to “${originLabel || "Untitled"}”`}
-            </span>
-            <button
-              type="button"
-              onClick={() => setLinking(null)}
-              className="hover:bg-accent rounded-full px-3 py-1 font-medium"
-            >
-              Done
-            </button>
-          </div>
-        )}
 
         {details?.kind === "bubble" && (
           <NotesPanel

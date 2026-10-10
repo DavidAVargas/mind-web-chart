@@ -1,6 +1,7 @@
 import {
   Download,
   Ellipsis,
+  Info,
   Redo2,
   Search,
   Sparkles,
@@ -16,7 +17,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { BUBBLE_KINDS } from "@/lib/mind-map/bubble-kinds";
+import { BUBBLE_KINDS, PICKABLE_KINDS } from "@/lib/mind-map/bubble-kinds";
 import { cn } from "@/lib/utils";
 import type { BubbleNode } from "./bubble-node";
 
@@ -93,6 +94,7 @@ export default function Toolbar({
 }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -134,6 +136,14 @@ export default function Toolbar({
         </ToolButton>
         <ToolButton label="Tidy up" onClick={onTidy}>
           <Sparkles className="size-4" aria-hidden="true" />
+        </ToolButton>
+        <ToolButton
+          label="Bubble types"
+          aria-expanded={legendOpen}
+          onClick={() => setLegendOpen((open) => !open)}
+          className={cn(legendOpen && "bg-accent")}
+        >
+          <Info className="size-4" aria-hidden="true" />
         </ToolButton>
 
         <div ref={menuRef} className="relative">
@@ -208,6 +218,41 @@ export default function Toolbar({
           />
         </label>
       </div>
+
+      {legendOpen && (
+        <section
+          aria-label="Bubble types"
+          className="border-border bg-card text-card-foreground w-72 rounded-xl border p-3 shadow-lg"
+        >
+          <h2 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+            Bubble types
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {PICKABLE_KINDS.map((kind) => {
+              const { label, hint, icon: Icon, color } = BUBBLE_KINDS[kind];
+              return (
+                <li key={kind} className="flex items-start gap-2.5">
+                  <span
+                    className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-white"
+                    style={{ background: color }}
+                  >
+                    {Icon && <Icon className="size-3.5" aria-hidden="true" />}
+                  </span>
+                  <span className="text-sm leading-snug">
+                    <span className="font-medium">{label}</span>
+                    <span className="text-muted-foreground block text-xs">
+                      {hint}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-muted-foreground border-border mt-3 border-t pt-2 text-xs">
+            Bubbles get smaller the further they are from My Mind.
+          </p>
+        </section>
+      )}
 
       {needle && (
         <ul className="border-border bg-popover text-popover-foreground w-full max-w-sm rounded-xl border p-1 shadow-lg">

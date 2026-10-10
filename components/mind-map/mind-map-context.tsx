@@ -12,12 +12,19 @@ type MindMapContextValue = {
   /** Keep adding bubbles to an existing thread. */
   addToThread: (edgeId: string) => void;
   deleteThread: (edgeId: string) => void;
+  /** One link of a thread picked on its own, if any. */
+  selectedLink: { threadId: string; memberId: string } | null;
+  selectLink: (threadId: string, memberId: string | null) => void;
+  /** Drop one bubble from a thread; the thread goes once it has none left. */
+  removeLink: (threadId: string, memberId: string) => void;
   /** The bubble the thread being drawn comes from, if any. */
   linkOrigin: string | null;
   /** The thread being hovered or selected; everything else fades back. */
   focusEdgeId: string | null;
   /** Bubbles in the focused thread. */
   focusNodeIds: Set<string> | null;
+  /** A thread is selected, so bubbles hold back their hover buttons. */
+  threadSelected: boolean;
   /** The bubble a dragged bubble will move under if dropped now. */
   dropTargetId: string | null;
 };

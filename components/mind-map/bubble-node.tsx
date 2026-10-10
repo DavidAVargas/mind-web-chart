@@ -46,6 +46,13 @@ export type BubbleData = {
 
 export type BubbleNode = Node<BubbleData, "bubble">;
 
+/** How far outside the bubble's edge its buttons sit. */
+const ARC_OFFSET = 20;
+/** Room each button needs along the arc, in px. */
+const ARC_SPACING = 36;
+/** Big bubbles still spread their buttons at least this far apart. */
+const MIN_ARC_STEP = Math.PI / 6;
+
 function ActionButton({ className, ...props }: ComponentProps<"button">) {
   return (
     <button
@@ -80,6 +87,7 @@ export default function BubbleNodeView({
     linkOrigin,
     focusNodeIds,
     dropTargetId,
+    threadSelected,
   } = useMindMap();
   const descendants = descendantCounts.get(id) ?? 0;
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
@@ -90,6 +98,8 @@ export default function BubbleNodeView({
   const isAction = data.kind === "action";
   const hasNote = Boolean(data.note?.trim());
   const isLinkSource = linkOrigin === id;
+  // While drawing or working on a thread, bubbles keep their buttons to themselves.
+  const quiet = Boolean(linkOrigin) || threadSelected;
 
   function addChild() {
     const parent = getNode(id);
@@ -133,6 +143,56 @@ export default function BubbleNodeView({
     });
   }
 
+  const actions = [
+    {
+      key: "add",
+      label: `Add a bubble to ${data.label}`,
+      title: "Add a bubble",
+      icon: Plus,
+      onClick: addChild,
+    },
+    {
+      key: "link",
+      label: `Connect ${data.label} to another bubble`,
+      title: "Connect to another bubble",
+      icon: Link2,
+      onClick: () => startLink(id),
+    },
+    {
+      key: "notes",
+      label: `Edit details for ${data.label}`,
+      title: "Notes and type",
+      icon: Pencil,
+      onClick: () => openNotes(id),
+    },
+    ...(descendants > 0 && !data.collapsed
+      ? [
+          {
+            key: "collapse",
+            label: `Hide everything under ${data.label}`,
+            title: "Collapse branch",
+            icon: ChevronsDownUp,
+            onClick: () => toggleCollapse(id),
+          },
+        ]
+      : []),
+    ...(isRoot
+      ? []
+      : [
+          {
+            key: "delete",
+            label: `Delete ${data.label}`,
+            title: "Delete bubble",
+            icon: Trash2,
+            onClick: () => deleteElements({ nodes: [{ id }] }),
+            className: "hover:text-destructive",
+          },
+        ]),
+  ];
+  // Buttons sit on an arc around the bottom of the bubble, just outside it.
+  const arcRadius = depthStyle.size / 2 + ARC_OFFSET;
+  const arcStep = Math.max(ARC_SPACING / arcRadius, MIN_ARC_STEP);
+
   function finishEditing(value: string) {
     setIsEditing(false);
     const label = value.trim();
@@ -156,8 +216,11 @@ export default function BubbleNodeView({
         isAction && data.done && "opacity-60",
         selected && "ring-ring/50 ring-4",
         isLinkSource && "ring-4 ring-emerald-500",
-        linkOrigin && !isLinkSource && "cursor-crosshair",
         focusNodeIds && !focusNodeIds.has(id) && "opacity-25",
+        // While adding to a thread, the bubble under the cursor lights up white.
+        linkOrigin &&
+          !isLinkSource &&
+          "cursor-crosshair hover:scale-105 hover:opacity-100 hover:shadow-[0_0_0_5px_white,0_0_28px_8px_rgba(255,255,255,0.85)]",
         dropTargetId === id && "ring-primary scale-110 ring-4",
       )}
     >
@@ -233,6 +296,18 @@ export default function BubbleNodeView({
         </button>
       )}
 
+      {!isRoot && Icon && dropTargetId !== id && !isEditing && !quiet && (
+        <span
+          className={cn(
+            "bg-foreground text-background pointer-events-none absolute bottom-full left-1/2 mb-2 flex -translate-x-1/2 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shadow-md transition-opacity",
+            selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}
+        >
+          <Icon className="size-3" aria-hidden="true" />
+          {kind.label}
+        </span>
+      )}
+
       {dropTargetId === id && (
         <span className="bg-primary text-primary-foreground absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shadow-md">
           Move here
@@ -262,57 +337,45 @@ export default function BubbleNodeView({
         </ActionButton>
       )}
 
-      {!isEditing && !linkOrigin && (
-        <div
-          className={cn(
-            "absolute top-full left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1 transition-opacity",
-            // Hover on desktop; tap-to-select on touch screens, which have no hover.
-            selected
-              ? "opacity-100"
-              : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100",
+      {!isEditing && !quiet && (
+        <>
+          {/* Widens the hover zone while hovered, so the cursor can reach the buttons. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-8 -z-10 rounded-full group-hover:pointer-events-auto"
+          />
+          {actions.map(
+            (
+              { key, label, title, icon: ActionIcon, onClick, className },
+              i,
+            ) => {
+              const angle =
+                Math.PI / 2 + (i - (actions.length - 1) / 2) * arcStep;
+              return (
+                <ActionButton
+                  key={key}
+                  onClick={onClick}
+                  aria-label={label}
+                  title={title}
+                  style={{
+                    left: `calc(50% + ${Math.cos(angle) * arcRadius}px)`,
+                    top: `calc(50% + ${Math.sin(angle) * arcRadius}px)`,
+                  }}
+                  className={cn(
+                    "absolute -translate-x-1/2 -translate-y-1/2 transition-[opacity,scale]",
+                    // Hover on desktop; tap-to-select on touch screens, which have no hover.
+                    selected
+                      ? "scale-100 opacity-100"
+                      : "pointer-events-none scale-50 opacity-0 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100",
+                    className,
+                  )}
+                >
+                  <ActionIcon className="size-3.5" aria-hidden="true" />
+                </ActionButton>
+              );
+            },
           )}
-        >
-          <ActionButton
-            onClick={addChild}
-            aria-label={`Add a bubble to ${data.label}`}
-            title="Add a bubble"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-          </ActionButton>
-          <ActionButton
-            onClick={() => startLink(id)}
-            aria-label={`Connect ${data.label} to another bubble`}
-            title="Connect to another bubble"
-          >
-            <Link2 className="size-4" aria-hidden="true" />
-          </ActionButton>
-          <ActionButton
-            onClick={() => openNotes(id)}
-            aria-label={`Edit details for ${data.label}`}
-            title="Notes and class"
-          >
-            <Pencil className="size-3.5" aria-hidden="true" />
-          </ActionButton>
-          {descendants > 0 && !data.collapsed && (
-            <ActionButton
-              onClick={() => toggleCollapse(id)}
-              aria-label={`Hide everything under ${data.label}`}
-              title="Collapse branch"
-            >
-              <ChevronsDownUp className="size-3.5" aria-hidden="true" />
-            </ActionButton>
-          )}
-          {!isRoot && (
-            <ActionButton
-              onClick={() => deleteElements({ nodes: [{ id }] })}
-              aria-label={`Delete ${data.label}`}
-              title="Delete bubble"
-              className="hover:text-destructive"
-            >
-              <Trash2 className="size-3.5" aria-hidden="true" />
-            </ActionButton>
-          )}
-        </div>
+        </>
       )}
     </div>
   );
