@@ -45,18 +45,20 @@ export default function ChartDialog({
   mode,
   initialTitle = "",
   initialEmoji = DEFAULT_EMOJI,
+  initialTemplate = "blank",
   onSubmit,
   onClose,
 }: {
   mode: "create" | "rename";
   initialTitle?: string;
   initialEmoji?: string;
+  initialTemplate?: TemplateId;
   onSubmit: (result: ChartDialogResult) => void;
   onClose: () => void;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [emoji, setEmoji] = useState(initialEmoji);
-  const [template, setTemplate] = useState<TemplateId>("blank");
+  const [template, setTemplate] = useState<TemplateId>(initialTemplate);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // A native modal dialog traps focus and closes on Escape.

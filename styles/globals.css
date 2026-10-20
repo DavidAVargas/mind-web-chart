@@ -103,3 +103,13 @@ input[type="search"]::-webkit-search-cancel-button {
   );
   --xy-minimap-mask-stroke-color: var(--border);
 }
+
+/* The dotted "paper" the charts sit on, reused on the home page. */
+@utility bg-paper {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklch, var(--foreground) 14%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
