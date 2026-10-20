@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { inter } from "@/utils/fonts";
 import "@/styles/globals.css";
-import Header from "@/components/_blocks/header/header";
 
 export const metadata: Metadata = {
   title: "Mind Web Chart",
@@ -16,10 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable}>
-        <div className="grid h-dvh grid-rows-[auto_1fr]">
-          <Header />
-          <main className="min-h-0">{children}</main>
-        </div>
+        <div className="h-dvh">{children}</div>
       </body>
     </html>
   );

@@ -1,9 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import { migrateNodes } from "./migrate";
 
-/** Bump the version if the saved shape ever changes, so old saves can be migrated. */
-const STORAGE_KEY = "mind-web-chart:v1";
-
 export type SavedMap<N extends Node = Node> = { nodes: N[]; edges: Edge[] };
 
 /** Checks that something read from storage or a file looks like a saved map. */
@@ -45,22 +42,4 @@ export function toSavedMap<N extends Node<{ isNew?: boolean }>>(
         focusable,
       })),
   };
-}
-
-export function loadMap<N extends Node>(): SavedMap<N> | null {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? parseSavedMap<N>(JSON.parse(raw)) : null;
-  } catch {
-    // Storage blocked or the save is corrupt: start fresh rather than crash.
-    return null;
-  }
-}
-
-export function saveMap(map: SavedMap) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // Storage full or blocked; the map still works, it just won't persist.
-  }
 }

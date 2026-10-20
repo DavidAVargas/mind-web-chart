@@ -44,12 +44,12 @@ import {
 } from "@/lib/mind-map/graph";
 import { getUndroppableIds, moveBranch } from "@/lib/mind-map/move";
 import { exportMap, importMap } from "@/lib/mind-map/backup";
-import {
-  loadMap,
-  saveMap,
-  toSavedMap,
-  type SavedMap,
-} from "@/lib/mind-map/storage";
+import { DEFAULT_EMOJI, loadChart, saveChart } from "@/lib/mind-map/charts";
+import { toSavedMap, type SavedMap } from "@/lib/mind-map/storage";
+import { ROOT_ID } from "@/lib/mind-map/templates";
+import Link from "next/link";
+import ChartDialog from "@/components/charts/chart-dialog";
+import ChartHeader from "./chart-header";
 import { tidyLayout } from "@/lib/mind-map/tidy";
 
 const nodeTypes = { bubble: BubbleNodeView };
@@ -58,23 +58,29 @@ const edgeTypes = {
   [CONNECTOR_EDGE]: ConnectorEdge,
 };
 
-const ROOT_SIZE = getBubbleSize({ depth: 0 });
+export default function MindMap({ chartId }: { chartId: string }) {
+  const [initial] = useState(() => loadChart<BubbleNode>(chartId));
 
-const initialNodes: BubbleNode[] = [
-  {
-    id: "root",
-    type: "bubble",
-    // Positions are top-left corners, so offset by half the size to center it on 0,0.
-    position: { x: -ROOT_SIZE / 2, y: -ROOT_SIZE / 2 },
-    data: { label: "My Mind", kind: "root", depth: 0 },
-    deletable: false,
-  },
-];
+  if (!initial) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <p className="text-lg font-semibold">This chart doesn&apos;t exist</p>
+        <p className="text-muted-foreground text-sm">
+          It may have been deleted, or it was made in a different browser.
+        </p>
+        <Link
+          href="/"
+          className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold"
+        >
+          Back to all charts
+        </Link>
+      </div>
+    );
+  }
 
-export default function MindMap() {
   return (
     <ReactFlowProvider>
-      <MindMapCanvas />
+      <MindMapCanvas chartId={chartId} initial={initial} />
     </ReactFlowProvider>
   );
 }
@@ -103,14 +109,16 @@ type Linking = {
   connectedTo?: string;
 };
 
-function MindMapCanvas() {
-  const [saved] = useState(() => loadMap<BubbleNode>());
-  const [nodes, setNodes, onNodesChange] = useNodesState(
-    saved?.nodes ?? initialNodes,
-  );
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
-    saved?.edges ?? [],
-  );
+function MindMapCanvas({
+  chartId,
+  initial,
+}: {
+  chartId: string;
+  initial: SavedMap<BubbleNode>;
+}) {
+  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initial.edges);
+  const [renaming, setRenaming] = useState(false);
   const {
     getNode,
     getNodes,
@@ -288,9 +296,12 @@ function MindMapCanvas() {
   );
 
   useEffect(() => {
-    const timeout = setTimeout(() => saveMap(savedMap), SAVE_DELAY_MS);
+    const timeout = setTimeout(
+      () => saveChart(chartId, savedMap),
+      SAVE_DELAY_MS,
+    );
     return () => clearTimeout(timeout);
-  }, [savedMap]);
+  }, [chartId, savedMap]);
 
   // ⌘Z / Ctrl+Z undo, ⇧⌘Z / Ctrl+Y redo, ⌘K or / to search. Typing in a text
   // box keeps the browser's own undo for that text.
@@ -593,130 +604,185 @@ function MindMapCanvas() {
     else toast.error("That file isn't a Mind Web Chart backup");
   }
 
+  // The center bubble carries the chart's name and emoji.
+  const root = nodes.find((node) => node.id === ROOT_ID);
+  const title = root?.data.label || "Untitled";
+  const emoji = root?.data.emoji || DEFAULT_EMOJI;
+
   const linkOriginNode = linking
     ? nodes.find((node) => node.id === linking.originId)
     : undefined;
 
   return (
     <MindMapContext value={context}>
-      <div className="relative h-full">
-        <ReactFlow
-          nodes={displayNodes}
-          edges={displayEdges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onBeforeDelete={onBeforeDelete}
-          onDelete={onDelete}
-          onNodeClick={(_, node) => {
-            if (linking) linkTo(node.id);
-            // With the details panel open, clicking another bubble shows its details.
-            else if (details) setDetails({ kind: "bubble", id: node.id });
-          }}
-          onEdgeClick={(_, edge) => {
-            if (selectedLink && selectedLink.threadId !== edge.id) {
+      <div className="flex h-full flex-col">
+        <ChartHeader
+          title={title}
+          emoji={emoji}
+          onRename={() => setRenaming(true)}
+        />
+        <div className="relative min-h-0 flex-1">
+          <ReactFlow
+            nodes={displayNodes}
+            edges={displayEdges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onBeforeDelete={onBeforeDelete}
+            onDelete={onDelete}
+            onNodeClick={(_, node) => {
+              if (linking) linkTo(node.id);
+              // With the details panel open, clicking another bubble shows its details.
+              else if (details) setDetails({ kind: "bubble", id: node.id });
+            }}
+            onEdgeClick={(_, edge) => {
+              if (selectedLink && selectedLink.threadId !== edge.id) {
+                setSelectedLink(null);
+              }
+              if (details && !isBranch(edge)) {
+                setDetails({ kind: "thread", id: edge.id });
+              }
+            }}
+            onPaneClick={() => {
+              setLinking(null);
               setSelectedLink(null);
+            }}
+            onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+            onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+            onNodeDragStart={onNodeDragStart}
+            onNodeDrag={onNodeDrag}
+            onNodeDragStop={onNodeDragStop}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            nodesConnectable={false}
+            // A click with a little hand wobble still counts as a click, not a drag.
+            nodeClickDistance={5}
+            paneClickDistance={5}
+            // No dragging while connecting, so every tap on a bubble picks it.
+            nodesDraggable={!linking}
+            fitView
+            fitViewOptions={{ maxZoom: 1 }}
+            minZoom={0.1}
+            maxZoom={3}
+            zoomOnDoubleClick={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={24} />
+            <Controls showInteractive={false} />
+            <MiniMap<BubbleNode>
+              pannable
+              zoomable
+              nodeColor={(node) => BUBBLE_KINDS[node.data.kind].color}
+              nodeStrokeWidth={0}
+              nodeBorderRadius={9999}
+              ariaLabel="Map overview"
+              // Too cramped on phones; pinch and drag cover it there.
+              className="max-sm:hidden"
+            />
+            {linking && linkOriginNode && (
+              <LinkingChip
+                origin={linkOriginNode}
+                step={
+                  linking.connectedTo
+                    ? "connected"
+                    : linking.multi
+                      ? "multi"
+                      : "pick"
+                }
+                targetLabel={
+                  linking.connectedTo
+                    ? getNode(linking.connectedTo)?.data.label
+                    : undefined
+                }
+                added={linking.added}
+                onAddMore={() =>
+                  setLinking({
+                    originId: linking.originId,
+                    threadId: linking.threadId,
+                    multi: true,
+                  })
+                }
+                onDone={() => setLinking(null)}
+              />
+            )}
+          </ReactFlow>
+
+          <Toolbar
+            nodes={nodes}
+            searchRef={searchRef}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            onPick={reveal}
+            onTidy={tidy}
+            onExport={() => exportMap(savedMap)}
+            onImport={handleImport}
+            onClear={() =>
+              replaceMap(
+                {
+                  nodes: root
+                    ? [
+                        {
+                          ...root,
+                          position: {
+                            x: -getBubbleSize(root.data) / 2,
+                            y: -getBubbleSize(root.data) / 2,
+                          },
+                          selected: false,
+                        },
+                      ]
+                    : [],
+                  edges: [],
+                },
+                "Map cleared",
+              )
             }
-            if (details && !isBranch(edge)) {
-              setDetails({ kind: "thread", id: edge.id });
-            }
-          }}
-          onPaneClick={() => {
-            setLinking(null);
-            setSelectedLink(null);
-          }}
-          onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
-          onEdgeMouseLeave={() => setHoveredEdgeId(null)}
-          onNodeDragStart={onNodeDragStart}
-          onNodeDrag={onNodeDrag}
-          onNodeDragStop={onNodeDragStop}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          nodesConnectable={false}
-          // A click with a little hand wobble still counts as a click, not a drag.
-          nodeClickDistance={5}
-          paneClickDistance={5}
-          // No dragging while connecting, so every tap on a bubble picks it.
-          nodesDraggable={!linking}
-          fitView
-          fitViewOptions={{ maxZoom: 1 }}
-          minZoom={0.1}
-          maxZoom={3}
-          zoomOnDoubleClick={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background variant={BackgroundVariant.Dots} gap={24} />
-          <Controls showInteractive={false} />
-          <MiniMap<BubbleNode>
-            pannable
-            zoomable
-            nodeColor={(node) => BUBBLE_KINDS[node.data.kind].color}
-            nodeStrokeWidth={0}
-            nodeBorderRadius={9999}
-            ariaLabel="Map overview"
-            // Too cramped on phones; pinch and drag cover it there.
-            className="max-sm:hidden"
           />
-          {linking && linkOriginNode && (
-            <LinkingChip
-              origin={linkOriginNode}
-              step={
-                linking.connectedTo
-                  ? "connected"
-                  : linking.multi
-                    ? "multi"
-                    : "pick"
-              }
-              targetLabel={
-                linking.connectedTo
-                  ? getNode(linking.connectedTo)?.data.label
-                  : undefined
-              }
-              added={linking.added}
-              onAddMore={() =>
-                setLinking({
-                  originId: linking.originId,
-                  threadId: linking.threadId,
-                  multi: true,
-                })
-              }
-              onDone={() => setLinking(null)}
+
+          {details?.kind === "bubble" && (
+            <NotesPanel
+              key={details.id}
+              nodeId={details.id}
+              onClose={() => setDetails(null)}
             />
           )}
-        </ReactFlow>
+          {details?.kind === "thread" && (
+            <ThreadPanel
+              key={details.id}
+              edgeId={details.id}
+              onClose={() => setDetails(null)}
+            />
+          )}
 
-        <Toolbar
-          nodes={nodes}
-          searchRef={searchRef}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={undo}
-          onRedo={redo}
-          onPick={reveal}
-          onTidy={tidy}
-          onExport={() => exportMap(savedMap)}
-          onImport={handleImport}
-          onClear={() =>
-            replaceMap({ nodes: initialNodes, edges: [] }, "Map cleared")
-          }
-        />
-
-        {details?.kind === "bubble" && (
-          <NotesPanel
-            key={details.id}
-            nodeId={details.id}
-            onClose={() => setDetails(null)}
-          />
-        )}
-        {details?.kind === "thread" && (
-          <ThreadPanel
-            key={details.id}
-            edgeId={details.id}
-            onClose={() => setDetails(null)}
-          />
-        )}
-
-        <Toaster position="bottom-center" />
+          <Toaster position="bottom-center" />
+        </div>
       </div>
+
+      {renaming && (
+        <ChartDialog
+          mode="rename"
+          initialTitle={title}
+          initialEmoji={emoji}
+          onClose={() => setRenaming(false)}
+          onSubmit={(result) => {
+            setRenaming(false);
+            setNodes((current) =>
+              current.map((node) =>
+                node.id === ROOT_ID
+                  ? {
+                      ...node,
+                      data: {
+                        ...node.data,
+                        label: result.title,
+                        emoji: result.emoji,
+                      },
+                    }
+                  : node,
+              ),
+            );
+          }}
+        />
+      )}
     </MindMapContext>
   );
 }

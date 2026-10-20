@@ -36,6 +36,8 @@ export type BubbleData = {
   depth: number;
   /** For actions: whether it's been done. */
   done?: boolean;
+  /** For the center bubble: the chart's emoji. */
+  emoji?: string;
   /** Longer, optional detail shown in the notes panel. */
   note?: string;
   /** Everything branching off this bubble is hidden. */
@@ -237,6 +239,12 @@ export default function BubbleNodeView({
         isConnectable={false}
         className="opacity-0"
       />
+
+      {isRoot && data.emoji && (
+        <span className="text-3xl leading-none" aria-hidden="true">
+          {data.emoji}
+        </span>
+      )}
 
       {Icon && (
         <Icon

@@ -59,6 +59,11 @@ export default function NotesPanel({
           }
           className="border-input bg-background rounded-md border px-3 py-2 text-base font-normal disabled:opacity-60"
         />
+        {isRoot && (
+          <span className="text-muted-foreground text-xs font-normal">
+            This is the chart&apos;s name. Rename it from the title at the top.
+          </span>
+        )}
       </label>
 
       {!isRoot && (
