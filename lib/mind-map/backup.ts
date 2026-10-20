@@ -9,7 +9,7 @@ export function exportMap(map: SavedMap) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `mind-web-chart-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `thoughtspun-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }

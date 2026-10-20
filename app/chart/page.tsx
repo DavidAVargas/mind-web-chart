@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import MindMapClient from "@/components/mind-map/mind-map-client";
 
 export const metadata: Metadata = {
-  title: "Chart · Mind Web Chart",
+  title: "Chart",
 };
 
 export default function ChartPage() {

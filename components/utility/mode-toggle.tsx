@@ -1,20 +1,40 @@
 "use client";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 type ThemeMode = "light" | "dark" | "auto";
 
-function getInitialMode(): ThemeMode {
-  if (typeof window === "undefined") {
-    return "auto";
-  }
+const STORAGE_KEY = "theme";
+const listeners = new Set<() => void>();
 
-  const stored = window.localStorage.getItem("theme");
-  if (stored === "light" || stored === "dark" || stored === "auto") {
-    return stored;
+function readMode(): ThemeMode {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "auto") {
+      return stored;
+    }
+  } catch {
+    // Storage blocked: fall back to following the system.
   }
-
   return "auto";
+}
+
+function writeMode(mode: ThemeMode) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    // Storage blocked: the choice just won't be remembered.
+  }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
 }
 
 function applyThemeMode(mode: ThemeMode) {
@@ -34,34 +54,21 @@ function applyThemeMode(mode: ThemeMode) {
 }
 
 export default function ModeToggle() {
-  const [mode, setMode] = useState<ThemeMode>("auto");
+  // The server can't see the saved choice, so it renders "auto" first.
+  const mode = useSyncExternalStore(subscribe, readMode, () => "auto" as const);
 
   useEffect(() => {
-    const initialMode = getInitialMode();
-    setMode(initialMode);
-    applyThemeMode(initialMode);
-  }, []);
-
-  useEffect(() => {
-    if (mode !== "auto") {
-      return;
-    }
+    applyThemeMode(mode);
+    if (mode !== "auto") return;
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => applyThemeMode("auto");
-
     media.addEventListener("change", onChange);
-    return () => {
-      media.removeEventListener("change", onChange);
-    };
+    return () => media.removeEventListener("change", onChange);
   }, [mode]);
 
   function toggleMode() {
-    const nextMode: ThemeMode =
-      mode === "light" ? "dark" : mode === "dark" ? "auto" : "light";
-    setMode(nextMode);
-    applyThemeMode(nextMode);
-    window.localStorage.setItem("theme", nextMode);
+    writeMode(mode === "light" ? "dark" : mode === "dark" ? "auto" : "light");
   }
 
   const label =
@@ -77,7 +84,7 @@ export default function ModeToggle() {
       onClick={toggleMode}
       aria-label={label}
       title={label}
-      className="rounded-full border border-(--chip-line) bg-(--chip-bg) p-2 text-(--sea-ink) shadow-[0_8px_22px_rgba(30,90,72,0.08)] transition hover:-translate-y-0.5"
+      className="border-border bg-card text-foreground hover:bg-accent rounded-full border p-2 transition-colors"
     >
       <Icon className="size-4" aria-hidden="true" />
     </button>

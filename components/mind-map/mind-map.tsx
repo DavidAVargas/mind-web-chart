@@ -51,6 +51,7 @@ import Link from "next/link";
 import ChartDialog from "@/components/charts/chart-dialog";
 import ChartHeader from "./chart-header";
 import { tidyLayout } from "@/lib/mind-map/tidy";
+import { APP_NAME } from "@/lib/brand";
 
 const nodeTypes = { bubble: BubbleNodeView };
 const edgeTypes = {
@@ -601,7 +602,7 @@ function MindMapCanvas({
   async function handleImport(file: File) {
     const map = await importMap<BubbleNode>(file);
     if (map) replaceMap(map, "Backup imported");
-    else toast.error("That file isn't a Mind Web Chart backup");
+    else toast.error(`That file isn't a ${APP_NAME} backup`);
   }
 
   // The center bubble carries the chart's name and emoji.

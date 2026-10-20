@@ -1,5 +1,6 @@
 import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
+import { LogoMark } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
 
 /** The bar above a chart: back to all charts, the chart's name, and the theme toggle. */
@@ -19,6 +20,7 @@ export default function ChartHeader({
         className="hover:bg-accent text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
+        <LogoMark className="size-5" />
         <span className="max-sm:sr-only">All charts</span>
       </Link>
       <span className="bg-border h-5 w-px" aria-hidden="true" />
