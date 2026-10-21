@@ -70,7 +70,7 @@ export default function MindMap({ chartId }: { chartId: string }) {
           It may have been deleted, or it was made in a different browser.
         </p>
         <Link
-          href="/"
+          href="/charts"
           className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold"
         >
           Back to all charts

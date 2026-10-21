@@ -16,7 +16,7 @@ export default function ChartHeader({
   return (
     <header className="border-border flex h-12 shrink-0 items-center gap-2 border-b px-2 sm:px-4">
       <Link
-        href="/"
+        href="/charts"
         className="hover:bg-accent text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />

@@ -1,13 +1,18 @@
-import Header from "@/components/_blocks/header/header";
-import ChartsHome from "@/components/charts/charts-home-client";
+import GlowBackdrop from "@/components/brand/glow-backdrop";
+import Hero from "@/components/landing/hero";
+import LandingNav from "@/components/landing/landing-nav";
 
-export default function Home() {
+/** The public home page. Signed-in people (and the app) go to /charts. */
+export default function LandingPage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header />
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <ChartsHome />
-      </main>
+    <div className="bg-paper relative h-full overflow-y-auto">
+      <GlowBackdrop />
+      <div className="relative">
+        <LandingNav />
+        <main>
+          <Hero />
+        </main>
+      </div>
     </div>
   );
 }
