@@ -44,7 +44,7 @@ export default function Hero() {
             href="/charts"
             className="group bg-primary text-primary-foreground inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold shadow-lg transition-transform hover:-translate-y-0.5 hover:shadow-xl"
           >
-            Get started, it&apos;s free
+            Start for free
             <ArrowRight
               className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden="true"
@@ -60,7 +60,7 @@ export default function Hero() {
 
         <p className="text-muted-foreground mt-6 flex items-center gap-2 text-sm">
           <Lock className="size-3.5" aria-hidden="true" />
-          No account needed to try. Your charts stay private.
+          Start free with one chart. Your charts are private to your account.
         </p>
       </div>
 
