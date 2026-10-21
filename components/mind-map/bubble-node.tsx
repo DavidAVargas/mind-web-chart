@@ -155,8 +155,8 @@ export default function BubbleNodeView({
     },
     {
       key: "link",
-      label: `Connect ${data.label} to another bubble`,
-      title: "Connect to another bubble",
+      label: `Start a thread from ${data.label}`,
+      title: "Start a thread",
       icon: Link2,
       onClick: () => startLink(id),
     },

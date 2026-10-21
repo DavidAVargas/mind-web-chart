@@ -177,8 +177,8 @@ function ActionBar({ at, actions }: { at: Point; actions: Action[] }) {
   );
 }
 
-/** A connector thread: from one bubble, branching out to one or more others. */
-export default function ConnectorEdge({
+/** A thread: from one bubble, branching out to one or more others. */
+export default function ThreadEdge({
   id,
   source,
   target,

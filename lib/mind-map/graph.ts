@@ -3,7 +3,8 @@ import type { Edge } from "@xyflow/react";
 /** Edge type for the parent → child lines made with the + button. */
 export const BRANCH_EDGE = "floating";
 /** Edge type for the cross-links made with the link button. */
-export const CONNECTOR_EDGE = "connector";
+// Saved charts store threads under the older name "connector", so the value stays.
+export const THREAD_EDGE = "connector";
 
 export function isBranch(edge: Edge) {
   return edge.type === BRANCH_EDGE;
@@ -51,7 +52,7 @@ export const THREAD_COLORS = [
 ];
 
 /**
- * A connector is a "thread": it starts at its source bubble and can branch out
+ * A thread starts at its source bubble and can branch out
  * to any number of member bubbles. Older saves only have a target, which is
  * the same as a thread with one member.
  */

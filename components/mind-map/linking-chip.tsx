@@ -32,7 +32,7 @@ function ChipButton({
 }
 
 /**
- * Floats above the bubble a connector starts from, so the prompt and its
+ * Floats above the bubble a thread starts from, so the prompt and its
  * buttons sit right where you're working instead of at the screen's edge.
  */
 export default function LinkingChip({
@@ -69,7 +69,7 @@ export default function LinkingChip({
       >
         {step === "pick" && (
           <>
-            <span>Tap a bubble to connect “{originLabel}”</span>
+            <span>Tap a bubble to thread it to “{originLabel}”</span>
             <ChipButton onClick={onDone}>Cancel</ChipButton>
           </>
         )}
@@ -81,7 +81,7 @@ export default function LinkingChip({
                 strokeWidth={3}
                 aria-hidden="true"
               />
-              Connected to “{targetLabel || "Untitled"}”
+              Thread started with “{targetLabel || "Untitled"}”
             </span>
             <ChipButton onClick={onAddMore}>
               <Plus className="size-4" aria-hidden="true" />
@@ -95,7 +95,7 @@ export default function LinkingChip({
         {step === "multi" && (
           <>
             <span>
-              Tap bubbles to add them
+              Tap bubbles to add them to the thread
               {added ? (
                 <span className="text-muted-foreground"> · {added} added</span>
               ) : null}

@@ -7,7 +7,7 @@ type MindMapContextValue = {
   toggleCollapse: (nodeId: string) => void;
   /** How many bubbles branch off each bubble, at any depth. */
   descendantCounts: Map<string, number>;
-  /** Start a new connector thread from this bubble. */
+  /** Start a new thread from this bubble. */
   startLink: (nodeId: string) => void;
   /** Keep adding bubbles to an existing thread. */
   addToThread: (edgeId: string) => void;

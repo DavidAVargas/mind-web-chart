@@ -37,9 +37,9 @@ export default function LandingNav() {
     <header
       className={cn(
         "sticky top-0 z-30 transition-colors duration-300",
-        scrolled || open
-          ? "border-border bg-background/80 border-b backdrop-blur-lg"
-          : "border-b border-transparent",
+        // Always a solid-ish background, so the links stay readable over the page.
+        "bg-background/85 border-b backdrop-blur-xl",
+        scrolled || open ? "border-border shadow-sm" : "border-transparent",
       )}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">

@@ -40,7 +40,7 @@ export default function FloatingEdge({ id, source, target }: EdgeProps) {
       style={{
         stroke: "var(--muted-foreground)",
         strokeWidth: 2,
-        // Fade branches back while a connector thread is in focus.
+        // Fade branches back while a thread is in focus.
         opacity: focusEdgeId ? 0.15 : 1,
         transition: "opacity 150ms",
       }}

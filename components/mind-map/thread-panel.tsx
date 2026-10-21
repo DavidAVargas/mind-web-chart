@@ -8,7 +8,7 @@ import {
 import type { BubbleNode } from "./bubble-node";
 import { PANEL_CLASS } from "./notes-panel";
 
-/** Details for a connector thread: which bubbles it ties together, and why. */
+/** Details for a thread: which bubbles it ties together, and why. */
 export default function ThreadPanel({
   edgeId,
   onClose,

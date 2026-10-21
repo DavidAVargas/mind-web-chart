@@ -19,7 +19,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 import BubbleNodeView, { type BubbleNode } from "./bubble-node";
-import ConnectorEdge from "./connector-edge";
+import ThreadEdge from "./thread-edge";
 import FloatingEdge from "./floating-edge";
 import { MindMapContext } from "./mind-map-context";
 import LinkingChip from "./linking-chip";
@@ -34,7 +34,7 @@ import {
 } from "@/lib/mind-map/bubble-kinds";
 import {
   BRANCH_EDGE,
-  CONNECTOR_EDGE,
+  THREAD_EDGE,
   getBranchIds,
   getParentId,
   getThreadMembers,
@@ -56,7 +56,7 @@ import { APP_NAME } from "@/lib/brand";
 const nodeTypes = { bubble: BubbleNodeView };
 const edgeTypes = {
   [BRANCH_EDGE]: FloatingEdge,
-  [CONNECTOR_EDGE]: ConnectorEdge,
+  [THREAD_EDGE]: ThreadEdge,
 };
 
 export default function MindMap({ chartId }: { chartId: string }) {
@@ -275,7 +275,7 @@ function MindMapCanvas({
               : edge,
           ),
         );
-        toast("Removed that link", {
+        toast("Removed that link from the thread", {
           action: { label: "Undo", onClick: undo },
         });
       },
@@ -423,7 +423,7 @@ function MindMapCanvas({
     const message = first
       ? `Deleted “${first.data.label || "Untitled"}”` +
         (deletedNodes.length > 1 ? ` and ${deletedNodes.length - 1} more` : "")
-      : "Deleted connector";
+      : "Deleted thread";
 
     toast(message, {
       action: {
@@ -461,7 +461,7 @@ function MindMapCanvas({
         id: threadId,
         source: linking.originId,
         target: nodeId,
-        type: CONNECTOR_EDGE,
+        type: THREAD_EDGE,
         data: {
           members: [nodeId],
           color: THREAD_COLORS[threadCount % THREAD_COLORS.length],
