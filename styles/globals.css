@@ -113,3 +113,22 @@ input[type="search"]::-webkit-search-cancel-button {
   );
   background-size: 22px 22px;
 }
+
+/* A slow drift for the home page glows, so the lights feel alive. */
+@keyframes glow-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.5%, 1rem, 0) scale(1.04);
+  }
+}
+
+@utility animate-glow {
+  animation: glow-drift 18s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
