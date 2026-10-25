@@ -105,7 +105,8 @@ export default function NotesPanel({
       <label className="flex flex-1 flex-col gap-1 text-sm font-medium">
         Notes
         <textarea
-          autoFocus
+          // A brand-new bubble keeps the cursor so you can name it first.
+          autoFocus={!data.isNew}
           value={data.note ?? ""}
           placeholder="Go deeper on this thought…"
           onChange={(event) =>

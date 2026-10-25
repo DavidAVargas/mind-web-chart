@@ -83,6 +83,7 @@ export default function BubbleNodeView({
   } = useReactFlow<BubbleNode, Edge>();
   const {
     openNotes,
+    detailsOpen,
     startLink,
     toggleCollapse,
     descendantCounts,
@@ -143,6 +144,8 @@ export default function BubbleNodeView({
       selectable: false,
       focusable: false,
     });
+    // With the details panel open, it follows you to the new bubble.
+    if (detailsOpen) openNotes(childId);
   }
 
   const actions = [

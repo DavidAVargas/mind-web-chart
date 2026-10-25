@@ -220,6 +220,7 @@ function MindMapCanvas({
   const context = useMemo(
     () => ({
       openNotes: (id: string) => setDetails({ kind: "bubble", id }),
+      detailsOpen: details !== null,
       openThreadNotes: (id: string) => setDetails({ kind: "thread", id }),
       toggleCollapse: (id: string) =>
         setNodes((current) =>
@@ -283,6 +284,7 @@ function MindMapCanvas({
     }),
     [
       linking,
+      details,
       focusEdge,
       dropTargetId,
       descendantCounts,
@@ -630,7 +632,15 @@ function MindMapCanvas({
             onEdgesChange={onEdgesChange}
             onBeforeDelete={onBeforeDelete}
             onDelete={onDelete}
-            onNodeClick={(_, node) => {
+            onNodeClick={(event, node) => {
+              // Clicks on a bubble's own buttons (+, ✓, …) aren't clicks on the bubble.
+              if (
+                (event.target as HTMLElement).closest(
+                  "button, input, textarea, select",
+                )
+              ) {
+                return;
+              }
               if (linking) linkTo(node.id);
               // With the details panel open, clicking another bubble shows its details.
               else if (details) setDetails({ kind: "bubble", id: node.id });

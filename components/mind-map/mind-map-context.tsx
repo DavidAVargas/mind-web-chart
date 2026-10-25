@@ -2,6 +2,8 @@ import { createContext, useContext } from "react";
 
 type MindMapContextValue = {
   openNotes: (nodeId: string) => void;
+  /** The details panel is showing, so a new bubble should take it over. */
+  detailsOpen: boolean;
   openThreadNotes: (edgeId: string) => void;
   /** Hide or show everything branching off a bubble. */
   toggleCollapse: (nodeId: string) => void;
