@@ -50,6 +50,7 @@ import { ROOT_ID } from "@/lib/mind-map/templates";
 import Link from "next/link";
 import ChartDialog from "@/components/charts/chart-dialog";
 import ChartHeader from "./chart-header";
+import { LogoMark } from "@/components/brand/logo";
 import { tidyLayout } from "@/lib/mind-map/tidy";
 import { APP_NAME } from "@/lib/brand";
 
@@ -59,15 +60,46 @@ const edgeTypes = {
   [THREAD_EDGE]: ThreadEdge,
 };
 
-export default function MindMap({ chartId }: { chartId: string }) {
-  const [initial] = useState(() => loadChart<BubbleNode>(chartId));
+type Loaded =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "error" }
+  | { status: "ready"; map: SavedMap<BubbleNode> };
 
-  if (!initial) {
+export default function MindMap({ chartId }: { chartId: string }) {
+  const [loaded, setLoaded] = useState<Loaded>({ status: "loading" });
+
+  useEffect(() => {
+    let current = true;
+    loadChart<BubbleNode>(chartId)
+      .then((map) => {
+        if (current) setLoaded(map ? { status: "ready", map } : { status: "missing" });
+      })
+      .catch(() => current && setLoaded({ status: "error" }));
+    return () => {
+      current = false;
+    };
+  }, [chartId]);
+
+  if (loaded.status === "loading") {
+    return (
+      <div className="bg-paper flex h-full items-center justify-center">
+        <LogoMark className="size-10 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (loaded.status !== "ready") {
+    const missing = loaded.status === "missing";
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-lg font-semibold">This chart doesn&apos;t exist</p>
+        <p className="text-lg font-semibold">
+          {missing ? "This chart doesn’t exist" : "Couldn’t open this chart"}
+        </p>
         <p className="text-muted-foreground text-sm">
-          It may have been deleted, or it was made in a different browser.
+          {missing
+            ? "It may have been deleted, or it belongs to a different account."
+            : "Check your connection and try again."}
         </p>
         <Link
           href="/charts"
@@ -81,7 +113,7 @@ export default function MindMap({ chartId }: { chartId: string }) {
 
   return (
     <ReactFlowProvider>
-      <MindMapCanvas chartId={chartId} initial={initial} />
+      <MindMapCanvas chartId={chartId} initial={loaded.map} />
     </ReactFlowProvider>
   );
 }
@@ -298,11 +330,23 @@ function MindMapCanvas({
     ],
   );
 
+  // The map that's already saved, so opening a chart doesn't save it right back.
+  const lastSaved = useRef(JSON.stringify(savedMap));
   useEffect(() => {
-    const timeout = setTimeout(
-      () => saveChart(chartId, savedMap),
-      SAVE_DELAY_MS,
-    );
+    const json = JSON.stringify(savedMap);
+    if (json === lastSaved.current) return;
+    const timeout = setTimeout(() => {
+      saveChart(chartId, savedMap)
+        .then(() => {
+          lastSaved.current = json;
+        })
+        .catch(() =>
+          toast.error("Couldn’t save your latest changes", {
+            id: "save-failed",
+            description: "Check your connection. We’ll keep trying as you edit.",
+          }),
+        );
+    }, SAVE_DELAY_MS);
     return () => clearTimeout(timeout);
   }, [chartId, savedMap]);
 

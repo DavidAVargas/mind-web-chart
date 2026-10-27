@@ -8,11 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.21",
     "@clerk/ui": "^1.42.0",
+    "@neon/config": "^1.9.4",
+    "@neon/env": "^1.6.5",
+    "@neondatabase/serverless": "^1.2.0",
     "@radix-ui/react-slot": "^1.2.5",
     "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.1",

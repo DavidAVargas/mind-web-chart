@@ -18,17 +18,28 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
 import { exportMap } from "@/lib/mind-map/backup";
 import {
+  addChart,
+  ChartLimitError,
   chartHref,
   createChart,
   deleteChart,
   duplicateChart,
+  FREE_CHART_LIMIT,
   listCharts,
-  loadChart,
   renameChart,
   restoreChart,
+  type Chart,
   type ChartMeta,
 } from "@/lib/mind-map/charts";
+import {
+  listLocalCharts,
+  markLocalChartsImported,
+  type LocalChart,
+} from "@/lib/mind-map/local-charts";
+import { useUser } from "@clerk/nextjs";
 import ChartDialog from "./chart-dialog";
+import ImportBanner from "./import-banner";
+import LimitDialog from "./limit-dialog";
 import ChartPreview from "./chart-preview";
 import TemplateArt from "./template-art";
 import GlowBackdrop from "@/components/brand/glow-backdrop";
@@ -217,17 +228,84 @@ function TemplateTiles({
 /** The home page: every chart, plus a way to start a new one. */
 export default function ChartsHome() {
   const router = useRouter();
-  const [charts, setCharts] = useState<ChartMeta[]>(() => listCharts());
+  const { user } = useUser();
+  const isAdmin = user?.publicMetadata.role === "admin";
+  /** null while the first load is on its way. */
+  const [loaded, setLoaded] = useState<Chart[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [localCharts, setLocalCharts] = useState<LocalChart[]>([]);
+  const [limitOpen, setLimitOpen] = useState(false);
+  const charts = useMemo(() => loaded ?? [], [loaded]);
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("edited");
   const [dialog, setDialog] = useState<
     | { mode: "create"; template: TemplateId }
-    | { mode: "rename"; chart: ChartMeta }
+    | { mode: "rename"; chart: Chart }
     | null
   >(null);
-  const refresh = () => setCharts(listCharts());
+  const refresh = () =>
+    listCharts()
+      .then((list) => {
+        setLoaded(list);
+        setLoadFailed(false);
+      })
+      .catch(() => setLoadFailed(true));
+
+  useEffect(() => {
+    let current = true;
+    listCharts()
+      .then((list) => {
+        if (!current) return;
+        setLoaded(list);
+        // Only after the account's charts are in, so imports don't race the first load.
+        setLocalCharts(listLocalCharts());
+      })
+      .catch(() => current && setLoadFailed(true));
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  const atLimit = !isAdmin && charts.length >= FREE_CHART_LIMIT;
   const startChart = (template: TemplateId = "blank") =>
-    setDialog({ mode: "create", template });
+    atLimit ? setLimitOpen(true) : setDialog({ mode: "create", template });
+
+  /** Something went wrong talking to the server; the limit has its own dialog. */
+  const failed = (error: unknown, message: string) => {
+    if (error instanceof ChartLimitError) setLimitOpen(true);
+    else toast.error(message, { description: "Check your connection and try again." });
+  };
+
+  async function importLocal() {
+    let imported = 0;
+    for (const chart of localCharts) {
+      try {
+        await addChart(chart.map, { id: chart.id, createdAt: chart.createdAt });
+        imported++;
+      } catch (error) {
+        if (!(error instanceof ChartLimitError)) {
+          toast.error("Couldn’t import your charts", {
+            description: "Check your connection and try again.",
+          });
+          await refresh();
+          return;
+        }
+        break;
+      }
+    }
+    markLocalChartsImported();
+    setLocalCharts([]);
+    await refresh();
+    const skipped = localCharts.length - imported;
+    toast.success(
+      `Imported ${imported} ${imported === 1 ? "chart" : "charts"} to your account`,
+      skipped > 0
+        ? {
+            description: `The free plan holds ${FREE_CHART_LIMIT}. The other ${skipped} stay saved in this browser.`,
+          }
+        : undefined,
+    );
+  }
 
   const totals = useMemo(
     () =>
@@ -249,30 +327,64 @@ export default function ChartsHome() {
       .sort(SORTS[sortBy].compare);
   }, [charts, query, sortBy]);
 
-  function remove(chart: ChartMeta) {
-    const removed = deleteChart(chart.id);
-    refresh();
+  async function remove(chart: Chart) {
+    // Gone from the page straight away; the server catches up.
+    setLoaded((list) => list?.filter((item) => item.id !== chart.id) ?? null);
+    try {
+      await deleteChart(chart.id);
+    } catch (error) {
+      failed(error, `Couldn’t delete “${chart.title}”`);
+      await refresh();
+      return;
+    }
     toast(`Deleted “${chart.title}”`, {
       duration: 8000,
-      action: removed
-        ? {
-            label: "Undo",
-            onClick: () => {
-              restoreChart(removed);
-              refresh();
-            },
-          }
-        : undefined,
+      action: {
+        label: "Undo",
+        onClick: () =>
+          restoreChart(chart)
+            .catch((error) => failed(error, "Couldn’t bring that chart back"))
+            .then(refresh),
+      },
     });
   }
 
   const isEmpty = charts.length === 0;
+
+  if (!loaded) {
+    return (
+      <div className="bg-paper relative flex min-h-full flex-col items-center justify-center gap-4 p-6 text-center">
+        <GlowBackdrop />
+        {loadFailed ? (
+          <>
+            <p className="relative text-lg font-semibold">Couldn’t load your charts</p>
+            <button
+              type="button"
+              onClick={refresh}
+              className="bg-primary text-primary-foreground relative rounded-full px-5 py-2 text-sm font-semibold"
+            >
+              Try again
+            </button>
+          </>
+        ) : (
+          <LogoMark className="relative size-12 animate-pulse" />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-paper relative min-h-full">
       <GlowBackdrop />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 pt-10 pb-28 sm:px-6 sm:pt-14 sm:pb-16">
+        {localCharts.length > 0 && (
+          <ImportBanner
+            charts={localCharts}
+            onImport={importLocal}
+            onDismiss={() => setLocalCharts([])}
+          />
+        )}
         {isEmpty ? (
           <section className="mx-auto flex max-w-3xl flex-col items-center text-center">
             <LogoMark className="animate-in fade-in zoom-in-90 size-16 duration-700 motion-reduce:animate-none" />
@@ -408,7 +520,7 @@ export default function ChartsHome() {
                         >
                           <div className="bg-paper bg-muted/40 relative m-2 aspect-[16/10] overflow-hidden rounded-[1.25rem] p-4">
                             <div className="size-full transition-transform duration-500 group-hover:scale-105">
-                              <ChartPreview map={loadChart(chart.id)} />
+                              <ChartPreview map={chart.map} />
                             </div>
                             <span className="bg-foreground text-background absolute bottom-3 left-3 flex size-10 items-center justify-center rounded-full text-lg shadow-md ring-4 ring-[var(--card)]">
                               {chart.emoji}
@@ -447,14 +559,14 @@ export default function ChartsHome() {
                         </Link>
                         <CardMenu
                           onRename={() => setDialog({ mode: "rename", chart })}
-                          onDuplicate={() => {
-                            duplicateChart(chart.id);
-                            refresh();
-                          }}
-                          onExport={() => {
-                            const map = loadChart(chart.id);
-                            if (map) exportMap(map);
-                          }}
+                          onDuplicate={() =>
+                            duplicateChart(chart)
+                              .catch((error) =>
+                                failed(error, "Couldn’t duplicate that chart"),
+                              )
+                              .then(refresh)
+                          }
+                          onExport={() => exportMap(chart.map)}
                           onDelete={() => remove(chart)}
                         />
                       </li>
@@ -484,10 +596,15 @@ export default function ChartsHome() {
           mode="create"
           initialTemplate={dialog.template}
           onClose={() => setDialog(null)}
-          onSubmit={(result) => {
-            const id = createChart(result);
-            setDialog(null);
-            router.push(chartHref(id));
+          onSubmit={async (result) => {
+            try {
+              const id = await createChart(result);
+              setDialog(null);
+              router.push(chartHref(id));
+            } catch (error) {
+              setDialog(null);
+              failed(error, "Couldn’t create that chart");
+            }
           }}
         />
       )}
@@ -497,13 +614,20 @@ export default function ChartsHome() {
           initialTitle={dialog.chart.title}
           initialEmoji={dialog.chart.emoji}
           onClose={() => setDialog(null)}
-          onSubmit={({ title, emoji }) => {
-            renameChart(dialog.chart.id, title, emoji);
+          onSubmit={async ({ title, emoji }) => {
+            const chart = dialog.chart;
             setDialog(null);
-            refresh();
+            try {
+              await renameChart(chart, title, emoji);
+            } catch (error) {
+              failed(error, "Couldn’t rename that chart");
+            }
+            await refresh();
           }}
         />
       )}
+
+      {limitOpen && <LimitDialog onClose={() => setLimitOpen(false)} />}
 
       <Toaster position="bottom-center" />
     </div>

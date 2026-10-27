@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 
-// The map loads from localStorage, which only exists in the browser,
-// so skip server rendering instead of rendering an empty map first.
+// The map loads in the browser after sign-in, and React Flow needs the
+// window, so skip server rendering.
 const MindMap = dynamic(() => import("./mind-map"), { ssr: false });
 
 /** Opens the chart named in the address, e.g. /chart?id=…. */
