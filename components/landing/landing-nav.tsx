@@ -10,8 +10,8 @@ import { APP_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#features", label: "Features" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#features", label: "Features" },
 ];
 
 /** Top bar for the public site. Turns solid once the page scrolls. */
@@ -51,12 +51,12 @@ export default function LandingNav() {
         <ul className="hidden items-center gap-1 md:flex">
           {LINKS.map((link) => (
             <li key={link.href}>
-              <a
+              <Link
                 href={link.href}
                 className="text-muted-foreground hover:text-foreground hover:bg-accent rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -111,13 +111,13 @@ export default function LandingNav() {
           <ul className="flex flex-col">
             {LINKS.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   onClick={() => setOpen(false)}
                   className="hover:bg-accent block rounded-lg px-3 py-3 font-medium"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
             <Show when="signed-out">

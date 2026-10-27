@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
-import { APP_NAME, TAGLINE } from "@/lib/brand";
+import { APP_NAME, CONTACT_EMAIL, TAGLINE } from "@/lib/brand";
 
 export default function LandingFooter() {
   return (
@@ -16,19 +16,39 @@ export default function LandingFooter() {
               Product
             </li>
             <li>
-              <a href="#how-it-works" className="hover:underline">
+              <Link href="/#how-it-works" className="hover:underline">
                 How it works
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#features" className="hover:underline">
+              <Link href="/#features" className="hover:underline">
                 Features
-              </a>
+              </Link>
             </li>
             <li>
               <Link href="/charts" className="hover:underline">
                 Your charts
               </Link>
+            </li>
+          </ul>
+          <ul className="flex flex-col gap-2">
+            <li className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+              Legal
+            </li>
+            <li>
+              <Link href="/privacy" className="hover:underline">
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className="hover:underline">
+                Terms
+              </Link>
+            </li>
+            <li>
+              <a href={`mailto:${CONTACT_EMAIL}`} className="hover:underline">
+                Contact
+              </a>
             </li>
           </ul>
         </nav>

@@ -23,6 +23,17 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           {TAGLINE}
         </p>
         {children}
+        <p className="text-muted-foreground max-w-xs text-center text-xs leading-relaxed">
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="text-foreground underline underline-offset-2">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-foreground underline underline-offset-2">
+            Privacy policy
+          </Link>
+          .
+        </p>
       </main>
     </div>
   );
