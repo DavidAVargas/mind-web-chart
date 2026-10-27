@@ -3,12 +3,26 @@ import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { fraunces, inter } from "@/utils/fonts";
 import "@/styles/globals.css";
-import { APP_NAME, TAGLINE } from "@/lib/brand";
+import { APP_NAME, SITE_URL, TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: { template: `%s · ${APP_NAME}`, default: APP_NAME },
   description: TAGLINE,
   applicationName: APP_NAME,
+  // Lets link previews use full URLs for the share image.
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: TAGLINE,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: APP_NAME,
+    description: TAGLINE,
+  },
 };
 
 // Sets light/dark before the page paints, so there's no flash of the wrong theme.
