@@ -41,7 +41,7 @@ export default function Hero() {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
-            href="/charts"
+            href="/sign-up"
             className="group bg-primary text-primary-foreground inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold shadow-lg transition-transform hover:-translate-y-0.5 hover:shadow-xl"
           >
             Start for free

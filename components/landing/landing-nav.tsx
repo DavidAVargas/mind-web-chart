@@ -1,5 +1,6 @@
 "use client";
 
+import { Show, UserButton } from "@clerk/nextjs";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -64,19 +65,31 @@ export default function LandingNav() {
           <div className="hidden md:block">
             <ModeToggle />
           </div>
-          {/* Sign in goes to Clerk once accounts exist; for now it opens the app. */}
-          <Link
-            href="/charts"
-            className="text-muted-foreground hover:text-foreground hidden rounded-full px-3 py-1.5 text-sm font-medium transition-colors md:block"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/charts"
-            className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
-          >
-            Get started
-          </Link>
+          <Show when="signed-out">
+            <Link
+              href="/sign-in"
+              className="text-muted-foreground hover:text-foreground hidden rounded-full px-3 py-1.5 text-sm font-medium transition-colors md:block"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+            >
+              Get started
+            </Link>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/charts"
+              className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+            >
+              Open app
+            </Link>
+            <div className="flex size-8 items-center justify-center">
+              <UserButton />
+            </div>
+          </Show>
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
@@ -107,14 +120,16 @@ export default function LandingNav() {
                 </a>
               </li>
             ))}
-            <li>
-              <Link
-                href="/charts"
-                className="hover:bg-accent block rounded-lg px-3 py-3 font-medium"
-              >
-                Sign in
-              </Link>
-            </li>
+            <Show when="signed-out">
+              <li>
+                <Link
+                  href="/sign-in"
+                  className="hover:bg-accent block rounded-lg px-3 py-3 font-medium"
+                >
+                  Sign in
+                </Link>
+              </li>
+            </Show>
           </ul>
           <div className="border-border mt-2 flex items-center justify-between border-t px-3 pt-3">
             <span className="text-muted-foreground text-sm">Theme</span>

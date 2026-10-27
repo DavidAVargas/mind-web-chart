@@ -1,3 +1,5 @@
+import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { fraunces, inter } from "@/utils/fonts";
 import "@/styles/globals.css";
@@ -31,7 +33,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${fraunces.variable}`}>
-        <div className="h-dvh">{children}</div>
+        <ClerkProvider
+          appearance={{ theme: shadcn }}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/charts"
+          signUpFallbackRedirectUrl="/charts"
+          afterSignOutUrl="/"
+        >
+          <div className="h-dvh">{children}</div>
+        </ClerkProvider>
       </body>
     </html>
   );

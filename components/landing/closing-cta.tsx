@@ -24,7 +24,7 @@ export default function ClosingCta() {
             Start with one thought. See where it leads.
           </p>
           <Link
-            href="/charts"
+            href="/sign-up"
             className="group bg-background text-foreground mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold shadow-xl transition-transform hover:-translate-y-0.5"
           >
             Start for free

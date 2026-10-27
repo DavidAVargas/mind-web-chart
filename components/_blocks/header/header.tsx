@@ -1,3 +1,4 @@
+import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
@@ -10,7 +11,13 @@ export default function Header() {
         <Logo name={APP_NAME} />
       </Link>
 
-      <ModeToggle />
+      <div className="flex items-center gap-3">
+        <ModeToggle />
+        {/* Keeps its spot while Clerk loads, so the header doesn't jump. */}
+        <div className="flex size-7 items-center justify-center">
+          <UserButton />
+        </div>
+      </div>
     </header>
   );
 }

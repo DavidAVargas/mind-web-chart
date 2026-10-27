@@ -1,9 +1,10 @@
+import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
 
-/** The bar above a chart: back to all charts, the chart's name, and the theme toggle. */
+/** The bar above a chart: back to all charts, the chart's name, the theme toggle and your profile. */
 export default function ChartHeader({
   title,
   emoji,
@@ -37,8 +38,11 @@ export default function ChartHeader({
           aria-hidden="true"
         />
       </button>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-3">
         <ModeToggle />
+        <div className="flex size-7 items-center justify-center">
+          <UserButton />
+        </div>
       </div>
     </header>
   );
