@@ -36,10 +36,10 @@ import {
   markLocalChartsImported,
   type LocalChart,
 } from "@/lib/mind-map/local-charts";
-import { useUser } from "@clerk/nextjs";
+import { usePlan } from "@/components/auth/use-plan";
 import ChartDialog from "./chart-dialog";
 import ImportBanner from "./import-banner";
-import LimitDialog from "./limit-dialog";
+import UpgradeDialog from "./upgrade-dialog";
 import ChartPreview from "./chart-preview";
 import TemplateArt from "./template-art";
 import GlowBackdrop from "@/components/brand/glow-backdrop";
@@ -228,8 +228,7 @@ function TemplateTiles({
 /** The home page: every chart, plus a way to start a new one. */
 export default function ChartsHome() {
   const router = useRouter();
-  const { user } = useUser();
-  const isAdmin = user?.publicMetadata.role === "admin";
+  const { isPaid } = usePlan();
   /** null while the first load is on its way. */
   const [loaded, setLoaded] = useState<Chart[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -266,7 +265,7 @@ export default function ChartsHome() {
     };
   }, []);
 
-  const atLimit = !isAdmin && charts.length >= FREE_CHART_LIMIT;
+  const atLimit = !isPaid && charts.length >= FREE_CHART_LIMIT;
   const startChart = (template: TemplateId = "blank") =>
     atLimit ? setLimitOpen(true) : setDialog({ mode: "create", template });
 
@@ -627,7 +626,9 @@ export default function ChartsHome() {
         />
       )}
 
-      {limitOpen && <LimitDialog onClose={() => setLimitOpen(false)} />}
+      {limitOpen && (
+        <UpgradeDialog reason="charts" onClose={() => setLimitOpen(false)} />
+      )}
 
       <Toaster position="bottom-center" />
     </div>

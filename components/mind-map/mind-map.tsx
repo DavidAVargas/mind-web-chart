@@ -27,11 +27,7 @@ import NotesPanel from "./notes-panel";
 import ThreadPanel from "./thread-panel";
 import Toolbar from "./toolbar";
 import { useHistory } from "./use-history";
-import {
-  BUBBLE_KINDS,
-  getBubbleCenter,
-  getBubbleSize,
-} from "@/lib/mind-map/bubble-kinds";
+import { getBubbleCenter, getBubbleSize } from "@/lib/mind-map/bubble-kinds";
 import {
   BRANCH_EDGE,
   THREAD_EDGE,
@@ -45,7 +41,17 @@ import {
 import { getUndroppableIds, moveBranch } from "@/lib/mind-map/move";
 import { exportMap, importMap } from "@/lib/mind-map/backup";
 import { DEFAULT_EMOJI, loadChart, saveChart } from "@/lib/mind-map/charts";
-import { toSavedMap, type SavedMap } from "@/lib/mind-map/storage";
+import { getKey, toSavedMap, type SavedMap } from "@/lib/mind-map/storage";
+import {
+  getType,
+  KEY_COLORS,
+  ROOT_KIND,
+  type ChartKey,
+} from "@/lib/mind-map/chart-key";
+import { ROOT_COLOR } from "@/lib/mind-map/bubble-kinds";
+import KeyPanel from "./key-panel";
+import UpgradeDialog from "@/components/charts/upgrade-dialog";
+import { usePlan } from "@/components/auth/use-plan";
 import { ROOT_ID } from "@/lib/mind-map/templates";
 import Link from "next/link";
 import ChartDialog from "@/components/charts/chart-dialog";
@@ -73,7 +79,8 @@ export default function MindMap({ chartId }: { chartId: string }) {
     let current = true;
     loadChart<BubbleNode>(chartId)
       .then((map) => {
-        if (current) setLoaded(map ? { status: "ready", map } : { status: "missing" });
+        if (current)
+          setLoaded(map ? { status: "ready", map } : { status: "missing" });
       })
       .catch(() => current && setLoaded({ status: "error" }));
     return () => {
@@ -124,7 +131,7 @@ const SAVE_DELAY_MS = 300;
 /** How long the tidy-up animation takes. */
 const TIDY_MS = 450;
 
-type Details = { kind: "bubble" | "thread"; id: string };
+type Details = { kind: "bubble" | "thread"; id: string } | { kind: "key" };
 
 type Linking = {
   /** The bubble the thread comes from. */
@@ -172,11 +179,19 @@ function MindMapCanvas({
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const dragStart = useRef<{ nodes: BubbleNode[]; edges: Edge[] } | null>(null);
 
-  const savedMap = useMemo(() => toSavedMap(nodes, edges), [nodes, edges]);
+  const [chartKey, setChartKey] = useState<ChartKey>(() => getKey(initial));
+  const { isPaid } = usePlan();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // Key changes are part of the map, so undo covers them too.
+  const savedMap = useMemo(
+    () => toSavedMap(nodes, edges, chartKey),
+    [nodes, edges, chartKey],
+  );
   const applyMap = useCallback(
     (map: SavedMap) => {
       setNodes(map.nodes as BubbleNode[]);
       setEdges(map.edges);
+      setChartKey(getKey(map));
     },
     [setNodes, setEdges],
   );
@@ -238,6 +253,15 @@ function MindMapCanvas({
     return counts;
   }, [nodes, edges]);
 
+  // How many bubbles use each type, so types in use can't be removed from the key.
+  const kindCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const node of nodes) {
+      counts.set(node.data.kind, (counts.get(node.data.kind) ?? 0) + 1);
+    }
+    return counts;
+  }, [nodes]);
+
   const [selectedLink, setSelectedLink] = useState<{
     threadId: string;
     memberId: string;
@@ -251,8 +275,11 @@ function MindMapCanvas({
 
   const context = useMemo(
     () => ({
+      chartKey,
+      openKey: () => setDetails({ kind: "key" }),
       openNotes: (id: string) => setDetails({ kind: "bubble", id }),
-      detailsOpen: details !== null,
+      // The key panel stays put while you add bubbles; the others follow along.
+      detailsOpen: details !== null && details.kind !== "key",
       openThreadNotes: (id: string) => setDetails({ kind: "thread", id }),
       toggleCollapse: (id: string) =>
         setNodes((current) =>
@@ -315,6 +342,7 @@ function MindMapCanvas({
       dropTargetId,
     }),
     [
+      chartKey,
       linking,
       details,
       focusEdge,
@@ -343,7 +371,8 @@ function MindMapCanvas({
         .catch(() =>
           toast.error("Couldn’t save your latest changes", {
             id: "save-failed",
-            description: "Check your connection. We’ll keep trying as you edit.",
+            description:
+              "Check your connection. We’ll keep trying as you edit.",
           }),
         );
     }, SAVE_DELAY_MS);
@@ -451,6 +480,7 @@ function MindMapCanvas({
 
     if (
       details &&
+      details.kind !== "key" &&
       (deletedIds.has(details.id) ||
         deletedEdges.some((edge) => edge.id === details.id))
     ) {
@@ -639,6 +669,7 @@ function MindMapCanvas({
   function replaceMap(map: SavedMap<BubbleNode>, message: string) {
     setNodes(map.nodes);
     setEdges(map.edges);
+    setChartKey(getKey(map));
     setDetails(null);
     setLinking(null);
     requestAnimationFrame(() => fitView({ duration: 400, maxZoom: 1 }));
@@ -687,13 +718,15 @@ function MindMapCanvas({
               }
               if (linking) linkTo(node.id);
               // With the details panel open, clicking another bubble shows its details.
-              else if (details) setDetails({ kind: "bubble", id: node.id });
+              else if (details && details.kind !== "key") {
+                setDetails({ kind: "bubble", id: node.id });
+              }
             }}
             onEdgeClick={(_, edge) => {
               if (selectedLink && selectedLink.threadId !== edge.id) {
                 setSelectedLink(null);
               }
-              if (details && !isBranch(edge)) {
+              if (details && details.kind !== "key" && !isBranch(edge)) {
                 setDetails({ kind: "thread", id: edge.id });
               }
             }}
@@ -726,7 +759,11 @@ function MindMapCanvas({
             <MiniMap<BubbleNode>
               pannable
               zoomable
-              nodeColor={(node) => BUBBLE_KINDS[node.data.kind].color}
+              nodeColor={(node) =>
+                node.data.kind === ROOT_KIND
+                  ? ROOT_COLOR
+                  : KEY_COLORS[getType(chartKey, node.data.kind).color].hex
+              }
               nodeStrokeWidth={0}
               nodeBorderRadius={9999}
               ariaLabel="Map overview"
@@ -772,9 +809,17 @@ function MindMapCanvas({
             onTidy={tidy}
             onExport={() => exportMap(savedMap)}
             onImport={handleImport}
+            chartKey={chartKey}
+            keyOpen={details?.kind === "key"}
+            onToggleKey={() =>
+              setDetails((open) =>
+                open?.kind === "key" ? null : { kind: "key" },
+              )
+            }
             onClear={() =>
               replaceMap(
                 {
+                  key: chartKey,
                   nodes: root
                     ? [
                         {
@@ -801,12 +846,26 @@ function MindMapCanvas({
               onClose={() => setDetails(null)}
             />
           )}
+          {details?.kind === "key" && (
+            <KeyPanel
+              chartKey={chartKey}
+              onChange={setChartKey}
+              locked={!isPaid}
+              onLocked={() => setUpgradeOpen(true)}
+              usage={kindCounts}
+              onClose={() => setDetails(null)}
+            />
+          )}
           {details?.kind === "thread" && (
             <ThreadPanel
               key={details.id}
               edgeId={details.id}
               onClose={() => setDetails(null)}
             />
+          )}
+
+          {upgradeOpen && (
+            <UpgradeDialog reason="key" onClose={() => setUpgradeOpen(false)} />
           )}
 
           <Toaster position="bottom-center" />

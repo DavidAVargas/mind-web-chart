@@ -2,13 +2,38 @@
 
 import { Check, Sparkles, X } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { FREE_CHART_LIMIT } from "@/lib/mind-map/charts";
+import { FREE_CHART_LIMIT } from "@/lib/mind-map/chart-meta";
 
-const PLUS_PERKS = ["Unlimited charts", "Ask Claude for ideas", "Everything new as it lands"];
+const PAID_PERKS = [
+  "Unlimited charts",
+  "Make each chart's key your own",
+  "Ask Claude for ideas",
+];
 
-/** Shown instead of the new-chart dialog once a free account is full. */
-export default function LimitDialog({ onClose }: { onClose: () => void }) {
+/** What the person tried to do that the free plan doesn't include. */
+export type UpgradeReason = "charts" | "key";
+
+const COPY: Record<UpgradeReason, { title: string; body: string }> = {
+  charts: {
+    title: "Your free chart is in use",
+    body: `The free plan includes ${FREE_CHART_LIMIT} chart. Keep building on it, or delete it to start fresh. More charts come with the full version, coming soon.`,
+  },
+  key: {
+    title: "Make the key your own",
+    body: "Renaming types, picking colors and icons, and adding your own types come with the full version, coming soon. On the free plan, each template's key is ready to use as it is.",
+  },
+};
+
+/** Shown when a free account reaches for something in the full version. */
+export default function UpgradeDialog({
+  reason,
+  onClose,
+}: {
+  reason: UpgradeReason;
+  onClose: () => void;
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { title, body } = COPY[reason];
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -19,7 +44,7 @@ export default function LimitDialog({ onClose }: { onClose: () => void }) {
       ref={dialogRef}
       onClose={onClose}
       onClick={(event) => event.target === dialogRef.current && onClose()}
-      aria-labelledby="limit-dialog-title"
+      aria-labelledby="upgrade-dialog-title"
       className="bg-card text-card-foreground border-border m-auto w-[min(26rem,calc(100%-2rem))] rounded-2xl border p-0 shadow-2xl backdrop:bg-black/50"
     >
       <div className="flex flex-col gap-5 p-6">
@@ -38,20 +63,25 @@ export default function LimitDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <h2 id="limit-dialog-title" className="font-display text-2xl font-medium tracking-tight">
-            Your free chart is in use
+          <h2
+            id="upgrade-dialog-title"
+            className="font-display text-2xl font-medium tracking-tight"
+          >
+            {title}
           </h2>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            The free plan includes {FREE_CHART_LIMIT} chart. Keep building on it, or
-            delete it to start fresh. More charts are coming soon with the full
-            version.
+            {body}
           </p>
         </div>
 
         <ul className="flex flex-col gap-2 text-sm">
-          {PLUS_PERKS.map((perk) => (
+          {PAID_PERKS.map((perk) => (
             <li key={perk} className="flex items-center gap-2">
-              <Check className="size-4 text-emerald-500" strokeWidth={3} aria-hidden="true" />
+              <Check
+                className="size-4 text-emerald-500"
+                strokeWidth={3}
+                aria-hidden="true"
+              />
               {perk}
             </li>
           ))}

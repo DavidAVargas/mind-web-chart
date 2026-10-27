@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import TemplateArt from "@/components/charts/template-art";
-import { BUBBLE_KINDS, PICKABLE_KINDS } from "@/lib/mind-map/bubble-kinds";
+import { KEY_COLORS, KEY_ICONS, LIFE_KEY } from "@/lib/mind-map/chart-key";
 import { TEMPLATES, type TemplateId } from "@/lib/mind-map/templates";
 import { cn } from "@/lib/utils";
 
@@ -43,16 +43,17 @@ function Card({
 function TypeChips() {
   return (
     <ul className="flex flex-wrap gap-2">
-      {PICKABLE_KINDS.map((kind) => {
-        const { label, icon: Icon, color } = BUBBLE_KINDS[kind];
+      {LIFE_KEY.map((type) => {
+        const Icon = KEY_ICONS[type.icon];
+        const color = KEY_COLORS[type.color].hex;
         return (
           <li
-            key={kind}
+            key={type.id}
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-white shadow-sm"
             style={{ background: color }}
           >
-            {Icon && <Icon className="size-3.5" aria-hidden="true" />}
-            {label}
+            <Icon className="size-3.5" aria-hidden="true" />
+            {type.label}
           </li>
         );
       })}
@@ -191,8 +192,8 @@ export default function Features() {
 
       <ul className="mt-12 grid gap-5 md:grid-cols-6">
         <Card
-          title="Bubbles with a purpose"
-          body="Areas, Goals, Blockers, Root causes, Actions and Thoughts each have their own color and icon. Bubbles shrink the further out they go, so your map always reads like a web."
+          title="A key for every chart"
+          body="Every chart has its own key of bubble types, each with a color and icon: Areas and Goals for your life, Options, Pros and Cons for a trip, or your own. Bubbles shrink the further out they go, so your map always reads like a web."
           className="md:col-span-4"
         >
           <TypeChips />

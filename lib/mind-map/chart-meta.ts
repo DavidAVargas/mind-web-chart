@@ -1,5 +1,6 @@
 import type { Node } from "@xyflow/react";
-import type { SavedMap } from "./storage";
+import { isCheckable } from "./chart-key";
+import { getKey, type SavedMap } from "./storage";
 import { ROOT_ID } from "./templates";
 
 export const DEFAULT_EMOJI = "🧠";
@@ -31,7 +32,9 @@ export function describe(
 ): Omit<ChartMeta, "id" | "createdAt" | "updatedAt"> {
   const nodes = map.nodes as Node<ChartData>[];
   const root = nodes.find((node) => node.id === ROOT_ID);
-  const actions = nodes.filter((node) => node.data.kind === "action");
+  // Bubbles you can tick off, like Actions or To-dos, make up the progress bar.
+  const key = getKey(map);
+  const actions = nodes.filter((node) => isCheckable(key, node.data.kind ?? ""));
   return {
     title: root?.data.label || "Untitled",
     emoji: root?.data.emoji || DEFAULT_EMOJI,

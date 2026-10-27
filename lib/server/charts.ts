@@ -40,11 +40,11 @@ export async function currentUserId() {
   return userId;
 }
 
-/** Admins skip the free plan's limits. */
-export async function isAdmin(userId: string) {
+/** Paid accounts and admins skip the free plan's limits. */
+export async function isPaid(userId: string) {
   const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  return user.publicMetadata.role === "admin";
+  const { publicMetadata } = await client.users.getUser(userId);
+  return publicMetadata.role === "admin" || publicMetadata.plan === "pro";
 }
 
 /** Reads a map from a request body, or null if it's missing, broken or too big. */

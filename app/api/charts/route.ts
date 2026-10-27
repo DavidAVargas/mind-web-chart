@@ -1,7 +1,7 @@
 import { FREE_CHART_LIMIT } from "@/lib/mind-map/chart-meta";
 import {
   currentUserId,
-  isAdmin,
+  isPaid,
   isUuid,
   json,
   mapColumns,
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const [{ count }] = (await sql`
     select count(*)::int as count from charts where user_id = ${userId}
   `) as { count: number }[];
-  if (count >= FREE_CHART_LIMIT && !(await isAdmin(userId))) {
+  if (count >= FREE_CHART_LIMIT && !(await isPaid(userId))) {
     return json(403, { error: "limit", limit: FREE_CHART_LIMIT });
   }
 

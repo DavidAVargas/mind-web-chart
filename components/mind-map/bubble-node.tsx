@@ -17,13 +17,20 @@ import {
 } from "lucide-react";
 import { useState, type ComponentProps } from "react";
 import {
-  BUBBLE_KINDS,
   getBubbleCenter,
   getBubbleSize,
   getDepthStyle,
   MAX_LABEL_LENGTH,
-  type BubbleKind,
+  ROOT_CLASS,
 } from "@/lib/mind-map/bubble-kinds";
+import {
+  getType,
+  isCheckable,
+  KEY_COLORS,
+  KEY_ICONS,
+  ROOT_KIND,
+  suggestKind,
+} from "@/lib/mind-map/chart-key";
 import { BRANCH_EDGE, getParentId, isBranch } from "@/lib/mind-map/graph";
 import { getChildPosition } from "@/lib/mind-map/layout";
 import { cn } from "@/lib/utils";
@@ -31,10 +38,11 @@ import { useMindMap } from "./mind-map-context";
 
 export type BubbleData = {
   label: string;
-  kind: BubbleKind;
+  /** The bubble's type: an id from the chart's key, or "root" for the center. */
+  kind: string;
   /** Steps out from My Mind; sets the bubble's size. */
   depth: number;
-  /** For actions: whether it's been done. */
+  /** For types you can tick off: whether it's been done. */
   done?: boolean;
   /** For the center bubble: the chart's emoji. */
   emoji?: string;
@@ -75,6 +83,7 @@ export default function BubbleNodeView({
 }: NodeProps<BubbleNode>) {
   const {
     getNode,
+    getNodes,
     getEdges,
     addNodes,
     addEdges,
@@ -91,14 +100,15 @@ export default function BubbleNodeView({
     focusNodeIds,
     dropTargetId,
     threadSelected,
+    chartKey,
   } = useMindMap();
   const descendants = descendantCounts.get(id) ?? 0;
   const [isEditing, setIsEditing] = useState(Boolean(data.isNew));
-  const kind = BUBBLE_KINDS[data.kind];
+  const isRoot = data.kind === ROOT_KIND;
+  const type = getType(chartKey, data.kind);
   const depthStyle = getDepthStyle(data.depth);
-  const Icon = kind.icon;
-  const isRoot = data.kind === "root";
-  const isAction = data.kind === "action";
+  const Icon = isRoot ? null : KEY_ICONS[type.icon];
+  const isAction = isCheckable(chartKey, data.kind);
   const hasNote = Boolean(data.note?.trim());
   const isLinkSource = linkOrigin === id;
   // While drawing or working on a thread, bubbles keep their buttons to themselves.
@@ -130,7 +140,7 @@ export default function BubbleNodeView({
       }),
       data: {
         label: "",
-        kind: kind.childKind,
+        kind: suggestKind(chartKey, id, getNodes(), edges),
         depth: childDepth,
         isNew: true,
       },
@@ -216,7 +226,12 @@ export default function BubbleNodeView({
       onDoubleClick={() => !isRoot && setIsEditing(true)}
       className={cn(
         "group relative flex flex-col items-center justify-center gap-0.5 rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity,scale]",
-        kind.className,
+        isRoot
+          ? ROOT_CLASS
+          : cn(
+              KEY_COLORS[type.color].className,
+              data.depth === 1 ? "font-semibold" : "font-medium",
+            ),
         depthStyle.text,
         isAction && data.done && "opacity-60",
         selected && "ring-ring/50 ring-4",
@@ -315,8 +330,53 @@ export default function BubbleNodeView({
           )}
         >
           <Icon className="size-3" aria-hidden="true" />
-          {kind.label}
+          {type.label}
         </span>
+      )}
+
+      {/* While naming a new bubble, one tap picks its type. */}
+      {isEditing && data.isNew && !isRoot && (
+        <div
+          role="radiogroup"
+          aria-label="Bubble type"
+          className="nodrag absolute top-full left-1/2 mt-3 flex w-max max-w-[22rem] -translate-x-1/2 flex-wrap justify-center gap-1"
+        >
+          {chartKey.map((option) => {
+            const OptionIcon = KEY_ICONS[option.icon];
+            const picked = option.id === data.kind;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={picked}
+                // Keep the cursor in the name while picking.
+                onPointerDown={(event) => event.preventDefault()}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => updateNodeData(id, { kind: option.id })}
+                className={cn(
+                  "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap shadow-sm transition-all",
+                  picked
+                    ? "border-transparent text-white"
+                    : "border-border bg-background text-foreground hover:-translate-y-0.5",
+                )}
+                style={
+                  picked
+                    ? {
+                        background:
+                          option.color === "outline"
+                            ? "var(--muted-foreground)"
+                            : KEY_COLORS[option.color].hex,
+                      }
+                    : undefined
+                }
+              >
+                <OptionIcon className="size-3" aria-hidden="true" />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {dropTargetId === id && (

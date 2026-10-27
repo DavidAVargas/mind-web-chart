@@ -1,9 +1,8 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { BubbleKind } from "./bubble-kinds";
 import { isBranch } from "./graph";
 
 /** Bubble classes from before kinds existed, and the kind each became. */
-const LEGACY_CLASSES: Record<string, BubbleKind> = {
+const LEGACY_CLASSES: Record<string, string> = {
   root: "root",
   main: "area",
   "sub-main": "goal",
@@ -42,7 +41,7 @@ export function migrateNodes<N extends Node>(nodes: N[], edges: Edge[]): N[] {
         kind:
           data.kind ??
           LEGACY_CLASSES[String(bubbleClass)] ??
-          ("thought" as const),
+          "thought",
         depth: depthOf(node.id),
       },
     };

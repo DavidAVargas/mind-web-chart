@@ -1,7 +1,17 @@
 import type { Edge, Node } from "@xyflow/react";
+import { LIFE_KEY, parseKey, type ChartKey } from "./chart-key";
 import { migrateNodes } from "./migrate";
 
-export type SavedMap<N extends Node = Node> = { nodes: N[]; edges: Edge[] };
+export type SavedMap<N extends Node = Node> = {
+  nodes: N[];
+  edges: Edge[];
+  /** The chart's key. Charts saved before keys existed use the Life map's. */
+  key?: ChartKey;
+};
+
+export function getKey(map: { key?: ChartKey } | null | undefined): ChartKey {
+  return map?.key?.length ? map.key : LIFE_KEY;
+}
 
 /** Checks that something read from storage or a file looks like a saved map. */
 export function parseSavedMap<N extends Node>(
@@ -9,7 +19,11 @@ export function parseSavedMap<N extends Node>(
 ): SavedMap<N> | null {
   const saved = value as Partial<SavedMap<N>> | null;
   return saved && Array.isArray(saved.nodes) && Array.isArray(saved.edges)
-    ? { nodes: migrateNodes(saved.nodes, saved.edges), edges: saved.edges }
+    ? {
+        nodes: migrateNodes(saved.nodes, saved.edges),
+        edges: saved.edges,
+        key: parseKey(saved.key) ?? LIFE_KEY,
+      }
     : null;
 }
 
@@ -17,6 +31,7 @@ export function parseSavedMap<N extends Node>(
 export function toSavedMap<N extends Node<{ isNew?: boolean }>>(
   nodes: N[],
   edges: Edge[],
+  key: ChartKey,
 ): SavedMap<N> {
   // A bubble still waiting for its first name isn't kept.
   const unnamed = new Set(
@@ -41,5 +56,6 @@ export function toSavedMap<N extends Node<{ isNew?: boolean }>>(
         selectable,
         focusable,
       })),
+    key,
   };
 }

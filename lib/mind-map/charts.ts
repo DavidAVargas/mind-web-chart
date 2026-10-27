@@ -1,3 +1,4 @@
+import type { ChartKey } from "./chart-key";
 import type { ChartMeta } from "./chart-meta";
 import { parseSavedMap, type SavedMap } from "./storage";
 import { buildTemplate, ROOT_ID, type TemplateId } from "./templates";
@@ -73,12 +74,15 @@ export async function createChart({
   title,
   emoji,
   template,
+  key,
 }: {
   title: string;
   emoji: string;
   template: TemplateId;
+  /** The key picked while creating; the template's own when left out. */
+  key?: ChartKey;
 }) {
-  const { id } = await addChart(buildTemplate(template, title, emoji));
+  const { id } = await addChart(buildTemplate(template, title, emoji, key));
   return id;
 }
 

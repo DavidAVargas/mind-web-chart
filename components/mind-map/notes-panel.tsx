@@ -1,12 +1,9 @@
 import { useNodesData, useReactFlow, type Edge } from "@xyflow/react";
-import { X } from "lucide-react";
+import { KeyRound, X } from "lucide-react";
 import type { BubbleNode } from "./bubble-node";
-import {
-  BUBBLE_KINDS,
-  MAX_LABEL_LENGTH,
-  PICKABLE_KINDS,
-  type BubbleKind,
-} from "@/lib/mind-map/bubble-kinds";
+import { MAX_LABEL_LENGTH } from "@/lib/mind-map/bubble-kinds";
+import { getType, isCheckable, ROOT_KIND } from "@/lib/mind-map/chart-key";
+import { useMindMap } from "./mind-map-context";
 
 /** Side panel on desktop, bottom sheet on phones. */
 export const PANEL_CLASS =
@@ -22,11 +19,13 @@ export default function NotesPanel({
 }) {
   const node = useNodesData<BubbleNode>(nodeId);
   const { updateNodeData } = useReactFlow<BubbleNode, Edge>();
+  const { chartKey, openKey } = useMindMap();
 
   if (!node) return null;
 
   const { data } = node;
-  const isRoot = data.kind === "root";
+  const isRoot = data.kind === ROOT_KIND;
+  const type = getType(chartKey, data.kind);
 
   return (
     <aside
@@ -36,7 +35,7 @@ export default function NotesPanel({
     >
       <div className="flex items-center justify-between">
         <h2 className="text-muted-foreground text-sm font-semibold">
-          {BUBBLE_KINDS[data.kind].label}
+          {isRoot ? "Center" : type.label}
         </h2>
         <button
           type="button"
@@ -68,27 +67,43 @@ export default function NotesPanel({
 
       {!isRoot && (
         <label className="flex flex-col gap-1 text-sm font-medium">
-          Type
+          <span className="flex items-center justify-between">
+            Type
+            <button
+              type="button"
+              onClick={openKey}
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs font-medium"
+            >
+              <KeyRound className="size-3.5" aria-hidden="true" />
+              Chart key
+            </button>
+          </span>
           <select
             value={data.kind}
             onChange={(event) =>
-              updateNodeData(nodeId, { kind: event.target.value as BubbleKind })
+              updateNodeData(nodeId, { kind: event.target.value })
             }
             className="border-input bg-background rounded-md border px-3 py-2 text-base font-normal"
           >
-            {PICKABLE_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {BUBBLE_KINDS[kind].label}
+            {/* A bubble whose type was removed from the key keeps showing as "No type". */}
+            {!chartKey.some((option) => option.id === data.kind) && (
+              <option value={data.kind}>No type</option>
+            )}
+            {chartKey.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </select>
-          <span className="text-muted-foreground text-xs font-normal">
-            {BUBBLE_KINDS[data.kind].hint}
-          </span>
+          {type.hint && (
+            <span className="text-muted-foreground text-xs font-normal">
+              {type.hint}
+            </span>
+          )}
         </label>
       )}
 
-      {data.kind === "action" && (
+      {isCheckable(chartKey, data.kind) && (
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"

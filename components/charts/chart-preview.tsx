@@ -1,19 +1,20 @@
 import type { Node } from "@xyflow/react";
 import {
-  BUBBLE_KINDS,
   getBubbleCenter,
   getBubbleSize,
-  type BubbleKind,
+  ROOT_COLOR,
 } from "@/lib/mind-map/bubble-kinds";
+import { getType, KEY_COLORS, ROOT_KIND } from "@/lib/mind-map/chart-key";
 import { isBranch } from "@/lib/mind-map/graph";
-import type { SavedMap } from "@/lib/mind-map/storage";
+import { getKey, type SavedMap } from "@/lib/mind-map/storage";
 
-type PreviewData = { kind: BubbleKind; depth: number };
+type PreviewData = { kind: string; depth: number };
 
 /** A tiny drawing of a chart: bubbles as dots in their type colors, branches as lines. */
 export default function ChartPreview({ map }: { map: SavedMap | null }) {
   const nodes = (map?.nodes ?? []) as Node<PreviewData>[];
   if (!nodes.length) return null;
+  const key = getKey(map);
 
   const circles = new Map(
     nodes.map((node) => [
@@ -21,7 +22,10 @@ export default function ChartPreview({ map }: { map: SavedMap | null }) {
       {
         ...getBubbleCenter(node),
         r: getBubbleSize(node.data) / 2,
-        color: BUBBLE_KINDS[node.data.kind]?.color ?? "#a3a3a3",
+        color:
+          node.data.kind === ROOT_KIND
+            ? ROOT_COLOR
+            : KEY_COLORS[getType(key, node.data.kind).color].hex,
       },
     ]),
   );

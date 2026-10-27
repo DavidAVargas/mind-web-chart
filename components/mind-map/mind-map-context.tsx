@@ -1,6 +1,11 @@
 import { createContext, useContext } from "react";
+import type { ChartKey } from "@/lib/mind-map/chart-key";
 
 type MindMapContextValue = {
+  /** The chart's key: the bubble types it uses. */
+  chartKey: ChartKey;
+  /** Open the chart key panel. */
+  openKey: () => void;
   openNotes: (nodeId: string) => void;
   /** The details panel is showing, so a new bubble should take it over. */
   detailsOpen: boolean;
