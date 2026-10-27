@@ -20,7 +20,7 @@ export default function PrivacyPage() {
           What you put in {APP_NAME} is often personal: goals, worries, the
           things holding you back. This page explains, in plain words, what we
           collect, why, and how to get it removed. The short version: your
-          charts are yours, we don&apos;t sell your data, and there are no ads.
+          charts are yours, we don’t sell your data, and there are no ads.
         </>
       }
     >
@@ -46,20 +46,20 @@ export default function PrivacyPage() {
         </li>
       </ul>
       <p>
-        We don&apos;t use advertising, ad trackers or analytics that follow you
+        We don’t use advertising, ad trackers or analytics that follow you
         around the web.
       </p>
 
       <h2>How we use it</h2>
       <ul>
-        <li>To sign you in and save your charts so they&apos;re there next time.</li>
-        <li>To apply your plan, for example the free plan&apos;s chart limit.</li>
+        <li>To sign you in and save your charts so they’re there next time.</li>
+        <li>To apply your plan, for example the free plan’s chart limit.</li>
         <li>To keep the service secure, fix problems and answer your emails.</li>
       </ul>
       <p>
-        We don&apos;t read your charts. People who run {APP_NAME} only access
-        them when it&apos;s needed to keep the service working, to fix a
-        problem you&apos;ve asked us to look at, or when the law requires it.
+        We don’t read your charts. People who run {APP_NAME} only access
+        them when it’s needed to keep the service working, to fix a
+        problem you’ve asked us to look at, or when the law requires it.
       </p>
 
       <h2>Who else handles your data</h2>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
       </ul>
       <p>
         If we add paid plans or new features that involve another service, such
-        as a payment provider, we&apos;ll update this page first. We never sell
+        as a payment provider, we’ll update this page first. We never sell
         your personal information.
       </p>
 
@@ -95,13 +95,13 @@ export default function PrivacyPage() {
       <h2>How long we keep it, and deleting it</h2>
       <ul>
         <li>
-          <strong>A chart:</strong> delete it from your charts page and it&apos;s
-          removed from our database. Copies in our provider&apos;s backups are
+          <strong>A chart:</strong> delete it from your charts page and it’s
+          removed from our database. Copies in our provider’s backups are
           cleared on their normal schedule.
         </li>
         <li>
           <strong>Everything:</strong> email {mail} from the address on your
-          account and we&apos;ll delete your account and all of your charts
+          account and we’ll delete your account and all of your charts
           within 30 days.
         </li>
       </ul>
@@ -115,20 +115,20 @@ export default function PrivacyPage() {
       </ul>
       <p>
         Depending on where you live (for example California or the EU), you may
-        have more rights under local law. Email {mail} and we&apos;ll help.
+        have more rights under local law. Email {mail} and we’ll help.
       </p>
 
       <h2>Children</h2>
       <p>
-        {APP_NAME} isn&apos;t meant for children under 13, and we don&apos;t
+        {APP_NAME} isn’t meant for children under 13, and we don’t
         knowingly collect their data. If you think a child has made an
-        account, let us know and we&apos;ll delete it.
+        account, let us know and we’ll delete it.
       </p>
 
       <h2>Changes to this policy</h2>
       <p>
-        If we change how we handle your data, we&apos;ll update this page and
-        the date at the top. For big changes, we&apos;ll let you know in the
+        If we change how we handle your data, we’ll update this page and
+        the date at the top. For big changes, we’ll let you know in the
         app or by email.
       </p>
 

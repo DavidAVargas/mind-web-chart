@@ -97,7 +97,7 @@ export default function ChartDialog({
         </div>
 
         <label className="flex flex-col gap-1.5 text-sm font-medium">
-          What&apos;s in the middle?
+          What’s in the middle?
           <div className="flex items-center gap-2">
             <span className="bg-foreground text-background flex size-11 shrink-0 items-center justify-center rounded-full text-xl">
               {emoji || DEFAULT_EMOJI}

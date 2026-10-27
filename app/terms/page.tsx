@@ -19,7 +19,7 @@ export default function TermsPage() {
       intro={
         <>
           These terms are the agreement between you and {APP_NAME} when you use
-          the website and app. We&apos;ve kept them short and readable. By
+          the website and app. We’ve kept them short and readable. By
           creating an account or using {APP_NAME}, you agree to them.
         </>
       }
@@ -28,7 +28,7 @@ export default function TermsPage() {
       <ul>
         <li>You need an account to use {APP_NAME}, and you must be at least 13.</li>
         <li>
-          Keep your sign-in details safe. You&apos;re responsible for what
+          Keep your sign-in details safe. You’re responsible for what
           happens in your account.
         </li>
         <li>Give accurate details, and one person per account.</li>
@@ -39,20 +39,20 @@ export default function TermsPage() {
         You own everything you put in {APP_NAME}. You give us permission to
         store, copy and display your charts only so we can run the service for
         you: saving them, showing them back to you, and keeping backups. We
-        don&apos;t claim ownership and don&apos;t use your charts for anything
+        don’t claim ownership and don’t use your charts for anything
         else.
       </p>
 
       <h2>Using {APP_NAME} fairly</h2>
-      <p>Please don&apos;t:</p>
+      <p>Please don’t:</p>
       <ul>
         <li>break the law or use {APP_NAME} to harm others;</li>
-        <li>try to get into other people&apos;s accounts or charts;</li>
+        <li>try to get into other people’s accounts or charts;</li>
         <li>
           overload, attack, scrape or reverse-engineer the service, or get
           around plan limits;
         </li>
-        <li>store content you don&apos;t have the right to use.</li>
+        <li>store content you don’t have the right to use.</li>
       </ul>
       <p>
         We may suspend or close accounts that break these rules, and will tell
@@ -61,20 +61,20 @@ export default function TermsPage() {
 
       <h2>Plans and payment</h2>
       <p>
-        The free plan includes {FREE_CHART_LIMIT} chart and doesn&apos;t
+        The free plan includes {FREE_CHART_LIMIT} chart and doesn’t
         include AI features. Paid plans may be offered later. If they are,
-        we&apos;ll show the price and what&apos;s included before you pay, and
+        we’ll show the price and what’s included before you pay, and
         purchases made through the Apple App Store or Google Play also follow
         their rules for billing and refunds. We may change plans and limits
-        over time, and won&apos;t remove charts you&apos;ve already made because
+        over time, and won’t remove charts you’ve already made because
         of a change.
       </p>
 
       <h2>Not professional advice</h2>
       <p>
-        {APP_NAME} is a tool for organizing your own thoughts. It isn&apos;t
-        therapy, medical, legal or financial advice, and it isn&apos;t a
-        substitute for a professional. If you&apos;re in crisis or thinking
+        {APP_NAME} is a tool for organizing your own thoughts. It isn’t
+        therapy, medical, legal or financial advice, and it isn’t a
+        substitute for a professional. If you’re in crisis or thinking
         about harming yourself, please contact local emergency services or a
         crisis line right away. In the US, you can call or text 988.
       </p>
@@ -82,7 +82,7 @@ export default function TermsPage() {
       <h2>The service as it is</h2>
       <p>
         {APP_NAME} is new and growing. We work hard to keep it running and your
-        charts safe, but it&apos;s provided &ldquo;as is,&rdquo; without
+        charts safe, but it’s provided “as is,” without
         guarantees that it will always be available or free of errors. We
         recommend exporting backups of charts that matter to you. Features may
         change, and we may add or remove things as the product improves.
@@ -90,12 +90,12 @@ export default function TermsPage() {
 
       <h2>Limits on our liability</h2>
       <p>
-        To the extent the law allows, {APP_NAME} isn&apos;t liable for
+        To the extent the law allows, {APP_NAME} isn’t liable for
         indirect or consequential losses, or for lost data, arising from your
-        use of the service. Where liability can&apos;t be excluded, it&apos;s
+        use of the service. Where liability can’t be excluded, it’s
         limited to the amount you paid us in the 12 months before the claim,
-        or $50 if you haven&apos;t paid anything. Nothing here limits rights
-        you have under consumer protection laws that can&apos;t be waived.
+        or $50 if you haven’t paid anything. Nothing here limits rights
+        you have under consumer protection laws that can’t be waived.
       </p>
 
       <h2>Leaving</h2>
@@ -107,7 +107,7 @@ export default function TermsPage() {
 
       <h2>Changes to these terms</h2>
       <p>
-        If we change these terms, we&apos;ll update this page and the date at
+        If we change these terms, we’ll update this page and the date at
         the top, and let you know about significant changes. Continuing to use{" "}
         {APP_NAME} after a change means you accept the new terms.
       </p>

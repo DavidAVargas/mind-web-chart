@@ -392,7 +392,7 @@ export default function ChartsHome() {
               Every web starts with one thought.
             </h1>
             <p className="text-muted-foreground mt-3 max-w-xl text-base">
-              Put what&apos;s on your mind in the middle, branch out into goals,
+              Put what’s on your mind in the middle, branch out into goals,
               blockers and actions, and tie it all together with threads.
             </p>
             <div className="mt-10 w-full">
@@ -407,7 +407,7 @@ export default function ChartsHome() {
                   {greeting()}
                 </p>
                 <h1 className="font-display mt-1 text-4xl font-medium tracking-tight sm:text-5xl">
-                  What&apos;s on your mind?
+                  What’s on your mind?
                 </h1>
                 <p className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                   <span>

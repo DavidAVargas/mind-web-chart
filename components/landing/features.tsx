@@ -185,7 +185,7 @@ export default function Features() {
           Features
         </p>
         <h2 className="font-display mt-3 text-4xl font-medium tracking-tight text-balance sm:text-5xl">
-          Everything you need to think clearly. Nothing you don&apos;t.
+          Everything you need to think clearly. Nothing you don’t.
         </h2>
       </div>
 

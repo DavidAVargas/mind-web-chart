@@ -61,7 +61,7 @@ export default function NotesPanel({
         />
         {isRoot && (
           <span className="text-muted-foreground text-xs font-normal">
-            This is the chart&apos;s name. Rename it from the title at the top.
+            This is the chart’s name. Rename it from the title at the top.
           </span>
         )}
       </label>
