@@ -50,6 +50,7 @@ import {
 } from "@/lib/mind-map/chart-key";
 import { ROOT_COLOR } from "@/lib/mind-map/bubble-kinds";
 import KeyPanel from "./key-panel";
+import FirstVisitTips, { type TipId } from "./first-visit-tips";
 import UpgradeDialog from "@/components/charts/upgrade-dialog";
 import { usePlan } from "@/components/auth/use-plan";
 import { ROOT_ID } from "@/lib/mind-map/templates";
@@ -182,6 +183,7 @@ function MindMapCanvas({
   const [chartKey, setChartKey] = useState<ChartKey>(() => getKey(initial));
   const { isPaid } = usePlan();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [tip, setTip] = useState<TipId | null>(null);
   // Key changes are part of the map, so undo covers them too.
   const savedMap = useMemo(
     () => toSavedMap(nodes, edges, chartKey),
@@ -811,6 +813,7 @@ function MindMapCanvas({
             onImport={handleImport}
             chartKey={chartKey}
             keyOpen={details?.kind === "key"}
+            keyHighlighted={tip === "key"}
             onToggleKey={() =>
               setDetails((open) =>
                 open?.kind === "key" ? null : { kind: "key" },
@@ -863,6 +866,8 @@ function MindMapCanvas({
               onClose={() => setDetails(null)}
             />
           )}
+
+          <FirstVisitTips onTipChange={setTip} />
 
           {upgradeOpen && (
             <UpgradeDialog reason="key" onClose={() => setUpgradeOpen(false)} />

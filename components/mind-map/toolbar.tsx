@@ -81,6 +81,7 @@ export default function Toolbar({
   onClear,
   chartKey,
   keyOpen,
+  keyHighlighted,
   onToggleKey,
 }: {
   nodes: BubbleNode[];
@@ -96,6 +97,8 @@ export default function Toolbar({
   onClear: () => void;
   chartKey: ChartKey;
   keyOpen: boolean;
+  /** A first-visit tip is pointing at the key button. */
+  keyHighlighted?: boolean;
   onToggleKey: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -146,7 +149,11 @@ export default function Toolbar({
           label="Chart key"
           aria-expanded={keyOpen}
           onClick={onToggleKey}
-          className={cn(keyOpen && "bg-accent")}
+          className={cn(
+            keyOpen && "bg-accent",
+            keyHighlighted &&
+              "ring-brand-500 ring-offset-card animate-pulse ring-2 ring-offset-1",
+          )}
         >
           <KeyRound className="size-4" aria-hidden="true" />
         </ToolButton>
