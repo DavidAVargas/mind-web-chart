@@ -2,6 +2,7 @@ import {
   Handle,
   Position,
   useReactFlow,
+  useStore,
   type Edge,
   type Node,
   type NodeProps,
@@ -35,6 +36,7 @@ import { BRANCH_EDGE, getParentId, isBranch } from "@/lib/mind-map/graph";
 import { getChildPosition } from "@/lib/mind-map/layout";
 import { cn } from "@/lib/utils";
 import { useMindMap } from "./mind-map-context";
+import { useTouchScreen } from "./use-touch-screen";
 
 export type BubbleData = {
   label: string;
@@ -62,6 +64,20 @@ const ARC_OFFSET = 20;
 const ARC_SPACING = 36;
 /** Big bubbles still spread their buttons at least this far apart. */
 const MIN_ARC_STEP = Math.PI / 6;
+
+/** Button sizes at 100% zoom, in px: the buttons around a bubble, and the ✓ and notes badges on it. */
+const BUTTON_SIZE = 28;
+const TOUCH_BUTTON_SIZE = 34;
+const BADGE_SIZE = 24;
+const TOUCH_BADGE_SIZE = 28;
+/** Zoomed out, buttons grow back toward their full size on screen, up to this much. */
+const MAX_BUTTON_BOOST = 2;
+/** Badges sit inside the bubble, so they grow less. */
+const MAX_BADGE_BOOST = 1.5;
+
+/** How much to grow buttons at this zoom, in quarter steps so zooming doesn't redraw every bubble each frame. */
+const zoomBoost = (zoom: number) =>
+  Math.min(MAX_BUTTON_BOOST, Math.max(1, Math.round(4 / zoom) / 4));
 
 function ActionButton({ className, ...props }: ComponentProps<"button">) {
   return (
@@ -107,6 +123,12 @@ export default function BubbleNodeView({
   const isRoot = data.kind === ROOT_KIND;
   const type = getType(chartKey, data.kind);
   const depthStyle = getDepthStyle(data.depth);
+  const boost = useStore((state) => zoomBoost(state.transform[2]));
+  const touch = useTouchScreen();
+  const buttonSize = (touch ? TOUCH_BUTTON_SIZE : BUTTON_SIZE) * boost;
+  const badgeSize =
+    (touch ? TOUCH_BADGE_SIZE : BADGE_SIZE) * Math.min(boost, MAX_BADGE_BOOST);
+  const badgeStyle = { width: badgeSize, height: badgeSize };
   const Icon = isRoot ? null : KEY_ICONS[type.icon];
   const isAction = isCheckable(chartKey, data.kind);
   const hasNote = Boolean(data.note?.trim());
@@ -205,8 +227,12 @@ export default function BubbleNodeView({
         ]),
   ];
   // Buttons sit on an arc around the bottom of the bubble, just outside it.
-  const arcRadius = depthStyle.size / 2 + ARC_OFFSET;
-  const arcStep = Math.max(ARC_SPACING / arcRadius, MIN_ARC_STEP);
+  const buttonScale = buttonSize / BUTTON_SIZE;
+  const arcRadius = depthStyle.size / 2 + ARC_OFFSET * buttonScale;
+  const arcStep = Math.max(
+    (ARC_SPACING * buttonScale) / arcRadius,
+    MIN_ARC_STEP,
+  );
 
   function finishEditing(value: string) {
     setIsEditing(false);
@@ -311,14 +337,15 @@ export default function BubbleNodeView({
           aria-label={`Mark ${data.label} as ${data.done ? "not done" : "done"}`}
           title={data.done ? "Done — tap to undo" : "Mark as done"}
           onClick={() => updateNodeData(id, { done: !data.done })}
+          style={badgeStyle}
           className={cn(
-            "nodrag absolute top-[7%] left-[7%] flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-500 shadow-sm transition-colors",
+            "nodrag absolute top-[7%] left-[7%] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-500 shadow-sm transition-colors",
             data.done
               ? "bg-emerald-500 text-white"
               : "bg-background text-transparent hover:text-emerald-500",
           )}
         >
-          <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+          <Check className="size-[60%]" strokeWidth={3} aria-hidden="true" />
         </button>
       )}
 
@@ -402,9 +429,10 @@ export default function BubbleNodeView({
           onClick={() => openNotes(id)}
           aria-label={`Open notes for ${data.label}`}
           title="Has notes"
-          className="absolute top-[7%] right-[7%] size-6 translate-x-1/2 -translate-y-1/2 shadow-sm"
+          style={badgeStyle}
+          className="absolute top-[7%] right-[7%] translate-x-1/2 -translate-y-1/2 shadow-sm"
         >
-          <NotebookPen className="size-3.5" aria-hidden="true" />
+          <NotebookPen className="size-[60%]" aria-hidden="true" />
         </ActionButton>
       )}
 
@@ -413,7 +441,8 @@ export default function BubbleNodeView({
           {/* Widens the hover zone while hovered, so the cursor can reach the buttons. */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-8 -z-10 rounded-full group-hover:pointer-events-auto"
+            style={{ inset: -32 * buttonScale }}
+            className="pointer-events-none absolute -z-10 rounded-full group-hover:pointer-events-auto"
           />
           {actions.map(
             (
@@ -429,6 +458,8 @@ export default function BubbleNodeView({
                   aria-label={label}
                   title={title}
                   style={{
+                    width: buttonSize,
+                    height: buttonSize,
                     left: `calc(50% + ${Math.cos(angle) * arcRadius}px)`,
                     top: `calc(50% + ${Math.sin(angle) * arcRadius}px)`,
                   }}
@@ -441,7 +472,7 @@ export default function BubbleNodeView({
                     className,
                   )}
                 >
-                  <ActionIcon className="size-3.5" aria-hidden="true" />
+                  <ActionIcon className="size-1/2" aria-hidden="true" />
                 </ActionButton>
               );
             },

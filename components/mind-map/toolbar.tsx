@@ -18,6 +18,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import { getType, ROOT_KIND, type ChartKey } from "@/lib/mind-map/chart-key";
 import { cn } from "@/lib/utils";
 import type { BubbleNode } from "./bubble-node";
@@ -41,7 +42,7 @@ function ToolButton({
       aria-label={label}
       title={label}
       className={cn(
-        "hover:bg-accent flex size-9 items-center justify-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-35",
+        "hover:bg-accent flex size-9 items-center justify-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-35 pointer-coarse:size-11 pointer-coarse:[&_svg]:size-5",
         className,
       )}
       {...props}
@@ -113,6 +114,8 @@ export default function Toolbar({
 }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  // Phones show search as a button, which opens the box on its own row.
+  const [searchOpen, setSearchOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -140,12 +143,19 @@ export default function Toolbar({
   function pick(nodeId: string) {
     onPick(nodeId);
     setQuery("");
+    setSearchOpen(false);
     searchRef.current?.blur();
+  }
+
+  function openSearch() {
+    // Rendered before focusing, so phones bring up the keyboard.
+    flushSync(() => setSearchOpen(true));
+    searchRef.current?.focus();
   }
 
   return (
     <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-      <div className="border-border bg-card text-card-foreground flex items-center gap-0.5 rounded-xl border p-1 shadow-md">
+      <div className="border-border bg-card text-card-foreground flex flex-wrap items-center gap-0.5 rounded-xl border p-1 shadow-md">
         <ToolButton label="Undo (⌘Z)" onClick={onUndo} disabled={!canUndo}>
           <Undo2 className="size-4" aria-hidden="true" />
         </ToolButton>
@@ -231,7 +241,21 @@ export default function Toolbar({
           }}
         />
 
-        <label className="relative ml-1 flex items-center">
+        <ToolButton
+          label="Search"
+          aria-expanded={searchOpen}
+          onClick={openSearch}
+          className={cn("sm:hidden", searchOpen && "bg-accent")}
+        >
+          <Search className="size-4" aria-hidden="true" />
+        </ToolButton>
+
+        <label
+          className={cn(
+            "relative ml-1 flex items-center max-sm:mt-1 max-sm:ml-0 max-sm:basis-full",
+            !searchOpen && "max-sm:hidden",
+          )}
+        >
           <Search
             className="text-muted-foreground pointer-events-none absolute left-2.5 size-4"
             aria-hidden="true"
@@ -243,14 +267,19 @@ export default function Toolbar({
             placeholder="Search…"
             aria-label="Search bubbles"
             onChange={(event) => setQuery(event.target.value)}
+            onBlur={(event) =>
+              !event.target.value.trim() && setSearchOpen(false)
+            }
             onKeyDown={(event) => {
               if (event.key === "Enter" && results[0]) pick(results[0].id);
               if (event.key === "Escape") {
                 setQuery("");
+                setSearchOpen(false);
                 event.currentTarget.blur();
               }
             }}
-            className="bg-background border-input w-28 rounded-lg border py-1.5 pr-2 pl-8 text-sm sm:w-48"
+            // 16px text on phones, or iOS zooms the page in when the box is focused.
+            className="bg-background border-input rounded-lg border py-1.5 pr-2 pl-8 text-sm max-sm:w-full max-sm:text-base sm:w-48"
           />
         </label>
       </div>
