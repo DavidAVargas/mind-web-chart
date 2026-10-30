@@ -1,4 +1,5 @@
 import {
+  CircleHelp,
   Download,
   Ellipsis,
   KeyRound,
@@ -20,8 +21,13 @@ import {
 import { getType, ROOT_KIND, type ChartKey } from "@/lib/mind-map/chart-key";
 import { cn } from "@/lib/utils";
 import type { BubbleNode } from "./bubble-node";
+import type { TipTarget } from "./first-visit-tips";
 
 const MAX_RESULTS = 8;
+
+/** Rings the button a tip is talking about. */
+const HIGHLIGHT_CLASS =
+  "ring-brand-500 ring-offset-card animate-pulse ring-2 ring-offset-1";
 
 function ToolButton({
   label,
@@ -81,8 +87,10 @@ export default function Toolbar({
   onClear,
   chartKey,
   keyOpen,
-  keyHighlighted,
   onToggleKey,
+  highlight,
+  tipsOpen,
+  onToggleTips,
 }: {
   nodes: BubbleNode[];
   searchRef: RefObject<HTMLInputElement | null>;
@@ -97,9 +105,11 @@ export default function Toolbar({
   onClear: () => void;
   chartKey: ChartKey;
   keyOpen: boolean;
-  /** A first-visit tip is pointing at the key button. */
-  keyHighlighted?: boolean;
   onToggleKey: () => void;
+  /** The button a tip is pointing at, if any. */
+  highlight: TipTarget | null;
+  tipsOpen: boolean;
+  onToggleTips: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -142,7 +152,11 @@ export default function Toolbar({
         <ToolButton label="Redo (⇧⌘Z)" onClick={onRedo} disabled={!canRedo}>
           <Redo2 className="size-4" aria-hidden="true" />
         </ToolButton>
-        <ToolButton label="Tidy up" onClick={onTidy}>
+        <ToolButton
+          label="Tidy up"
+          onClick={onTidy}
+          className={cn(highlight === "tidy" && HIGHLIGHT_CLASS)}
+        >
           <Sparkles className="size-4" aria-hidden="true" />
         </ToolButton>
         <ToolButton
@@ -151,11 +165,21 @@ export default function Toolbar({
           onClick={onToggleKey}
           className={cn(
             keyOpen && "bg-accent",
-            keyHighlighted &&
-              "ring-brand-500 ring-offset-card animate-pulse ring-2 ring-offset-1",
+            highlight === "key" && HIGHLIGHT_CLASS,
           )}
         >
           <KeyRound className="size-4" aria-hidden="true" />
+        </ToolButton>
+        <ToolButton
+          label="Tips"
+          aria-expanded={tipsOpen}
+          onClick={onToggleTips}
+          className={cn(
+            tipsOpen && "bg-accent",
+            highlight === "tips" && HIGHLIGHT_CLASS,
+          )}
+        >
+          <CircleHelp className="size-4" aria-hidden="true" />
         </ToolButton>
 
         <div ref={menuRef} className="relative">
@@ -226,7 +250,7 @@ export default function Toolbar({
                 event.currentTarget.blur();
               }
             }}
-            className="bg-background border-input w-36 rounded-lg border py-1.5 pr-2 pl-8 text-sm sm:w-48"
+            className="bg-background border-input w-28 rounded-lg border py-1.5 pr-2 pl-8 text-sm sm:w-48"
           />
         </label>
       </div>

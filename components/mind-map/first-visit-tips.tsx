@@ -2,48 +2,122 @@
 
 import {
   ArrowLeft,
+  Check,
+  CircleHelp,
   KeyRound,
   Link2,
   Pencil,
   Plus,
+  Sparkles,
+  Tag,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const SEEN_KEY = "thoughtspun:tips-seen";
 
-export type TipId = "add" | "name" | "key" | "thread";
+/** The toolbar buttons a tip can point at. */
+export type TipTarget = "key" | "tidy" | "tips";
 
-const TIPS: { id: TipId; icon: LucideIcon; title: string; body: string }[] = [
+/** A toolbar button's icon, drawn inline so the tip shows what to look for. */
+function Btn({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="border-border bg-background text-foreground mx-0.5 inline-flex size-5 translate-y-1 items-center justify-center rounded-md border">
+      <Icon className="size-3" aria-hidden="true" />
+    </span>
+  );
+}
+
+const TIPS: {
+  icon: LucideIcon;
+  title: string;
+  body: ReactNode;
+  target?: TipTarget;
+}[] = [
   {
-    id: "add",
     icon: Plus,
     title: "Grow your web",
-    body: "Tap a bubble to see its buttons (on a computer, just hover). The + adds a new bubble off it.",
+    body: (
+      <>
+        Tap a bubble to see its buttons. <Btn icon={Plus} /> adds a new idea off
+        it.
+      </>
+    ),
   },
   {
-    id: "name",
-    icon: Pencil,
-    title: "Name it, pick its type",
-    body: "A new bubble shows its types underneath while you name it. Tap one to set it. Double-tap any bubble to rename it, and the pencil holds its notes.",
+    icon: Tag,
+    title: "Give it a type",
+    body: "As you name a new bubble, tap a type under it. Each type has its own color.",
   },
   {
-    id: "key",
     icon: KeyRound,
     title: "Your chart key",
-    body: "The key button up top shows what each color and icon means in this chart.",
+    body: (
+      <>
+        <Btn icon={KeyRound} /> up top lists this chart’s types and what each
+        color means.
+      </>
+    ),
+    target: "key",
   },
   {
-    id: "thread",
+    icon: Check,
+    title: "Make to-dos",
+    body: (
+      <>
+        In the chart key, turn on <Btn icon={Check} /> for a type (Action and
+        To-do already have it). Its bubbles get a little circle in the corner:
+        tap it when that one’s done, and tap again to undo.
+      </>
+    ),
+  },
+  {
+    icon: Pencil,
+    title: "Notes",
+    body: (
+      <>
+        <Btn icon={Pencil} /> on a bubble opens its notes. Double-tap a bubble
+        to rename it.
+      </>
+    ),
+  },
+  {
     icon: Link2,
     title: "Tie ideas together",
-    body: "The link button starts a thread between two bubbles that belong together, even on different branches.",
+    body: (
+      <>
+        <Btn icon={Link2} /> links two bubbles that belong together, even on
+        different branches.
+      </>
+    ),
+  },
+  {
+    icon: Sparkles,
+    title: "Tidy up",
+    body: (
+      <>
+        <Btn icon={Sparkles} /> neatly spaces out the whole web. Undo is right
+        beside it.
+      </>
+    ),
+    target: "tidy",
+  },
+  {
+    icon: CircleHelp,
+    title: "That’s it",
+    body: (
+      <>
+        Tap <Btn icon={CircleHelp} /> up top any time to see these tips again.
+      </>
+    ),
+    target: "tips",
   },
 ];
 
-function hasSeenTips() {
+/** Whether this device has seen the tips; true if storage can't be read. */
+export function hasSeenTips() {
   try {
     return window.localStorage.getItem(SEEN_KEY) !== null;
   } catch {
@@ -60,31 +134,30 @@ function markTipsSeen() {
 }
 
 /**
- * A few tips the first time someone opens a chart, one at a time. Finishing
- * or skipping them hides them for good on this device. `onTipChange` tells
- * the editor which tip is showing, so it can point at what the tip is about.
+ * Short tips, one at a time: shown the first time someone opens a chart, and
+ * again from the toolbar's ? button. Closing them marks them seen on this
+ * device. `onTargetChange` says which toolbar button the tip is about, so the
+ * toolbar can point it out.
  */
 export default function FirstVisitTips({
-  onTipChange,
+  onClose,
+  onTargetChange,
 }: {
-  onTipChange: (tip: TipId | null) => void;
+  onClose: () => void;
+  onTargetChange: (target: TipTarget | null) => void;
 }) {
-  // The editor only renders in the browser, so storage can be read right away.
-  const [step, setStep] = useState<number | null>(() =>
-    hasSeenTips() ? null : 0,
-  );
-  const tip = step === null ? null : TIPS[step];
+  const [step, setStep] = useState(0);
+  const tip = TIPS[step];
 
   useEffect(() => {
-    onTipChange(tip?.id ?? null);
-  }, [tip, onTipChange]);
-
-  if (!tip || step === null) return null;
+    onTargetChange(tip.target ?? null);
+    return () => onTargetChange(null);
+  }, [tip, onTargetChange]);
 
   const last = step === TIPS.length - 1;
   const close = () => {
     markTipsSeen();
-    setStep(null);
+    onClose();
   };
   const Icon = tip.icon;
 
@@ -101,7 +174,7 @@ export default function FirstVisitTips({
           <Icon className="size-4" aria-hidden="true" />
         </span>
         <div
-          key={tip.id}
+          key={step}
           className="animate-in fade-in min-w-0 flex-1 duration-200"
         >
           <h2 className="font-semibold">{tip.title}</h2>
@@ -125,7 +198,7 @@ export default function FirstVisitTips({
         >
           {TIPS.map((item, index) => (
             <span
-              key={item.id}
+              key={item.title}
               aria-hidden="true"
               className={cn(
                 "h-1.5 rounded-full transition-all",
