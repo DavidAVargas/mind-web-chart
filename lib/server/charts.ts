@@ -1,5 +1,12 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { describe, type ChartMeta } from "@/lib/mind-map/chart-meta";
+import {
+  BLANK_KEY,
+  LIFE_KEY,
+  PROBLEM_KEY,
+  parseKey,
+  type ChartKey,
+} from "@/lib/mind-map/chart-key";
 import { parseSavedMap, type SavedMap } from "@/lib/mind-map/storage";
 import { sql } from "./db";
 
@@ -45,6 +52,31 @@ export async function isPaid(userId: string) {
   const client = await clerkClient();
   const { publicMetadata } = await client.users.getUser(userId);
   return publicMetadata.role === "admin" || publicMetadata.plan === "pro";
+}
+
+/** The keys charts start with. The free plan can use these, but not change them. */
+const STARTER_KEYS = new Set(
+  [LIFE_KEY, PROBLEM_KEY, BLANK_KEY].map((key) =>
+    JSON.stringify(parseKey(key)),
+  ),
+);
+
+/**
+ * Whether this user may save a chart with this key. Editing a key is for paid
+ * accounts, so the free plan can only save a starter key, or the key the chart
+ * already had (so a chart keeps working after a plan ends). Checks the key
+ * first, so most saves never need to look up the account.
+ */
+export async function canUseKey(
+  userId: string,
+  key: ChartKey | undefined,
+  loadSavedKey?: () => Promise<unknown>,
+) {
+  const value = JSON.stringify(key ?? null);
+  if (key === undefined || STARTER_KEYS.has(value)) return true;
+  if (loadSavedKey && JSON.stringify(parseKey(await loadSavedKey())) === value)
+    return true;
+  return isPaid(userId);
 }
 
 /** Reads a map from a request body, or null if it's missing, broken or too big. */

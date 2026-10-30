@@ -1,4 +1,5 @@
 import {
+  canUseKey,
   currentUserId,
   isUuid,
   json,
@@ -32,6 +33,16 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/charts/[id]"
   const body = await request.json().catch(() => null);
   const map = readMap(body?.map);
   if (!map) return json(400, { error: "invalid-map" });
+
+  const loadSavedKey = async () => {
+    const rows = (await sql`
+      select map->'key' as key from charts where id = ${id} and user_id = ${userId}
+    `) as { key: unknown }[];
+    return rows[0]?.key;
+  };
+  if (!(await canUseKey(userId, map.key, loadSavedKey))) {
+    return json(403, { error: "key" });
+  }
 
   const columns = mapColumns(map);
   const rows = (await sql`
