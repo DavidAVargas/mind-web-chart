@@ -1,6 +1,13 @@
 "use client";
 
-import { Check, Lock, Plus, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import {
   KEY_COLORS,
@@ -17,6 +24,15 @@ import { cn } from "@/lib/utils";
 
 const COLORS = Object.keys(KEY_COLORS) as KeyColor[];
 const ICONS = Object.keys(KEY_ICONS) as KeyIcon[];
+
+/** Three rows of eight. KEY_ICONS holds whole pages, so none is left half full. */
+const ICONS_PER_PAGE = 24;
+const ICON_PAGES = Array.from(
+  { length: Math.ceil(ICONS.length / ICONS_PER_PAGE) },
+  (_, page) => ICONS.slice(page * ICONS_PER_PAGE, (page + 1) * ICONS_PER_PAGE),
+);
+const pageOf = (icon: KeyIcon) =>
+  Math.floor(ICONS.indexOf(icon) / ICONS_PER_PAGE);
 
 /** A type's dot: its color, with its icon inside. */
 export function TypeSwatch({
@@ -66,6 +82,7 @@ export default function KeyEditor({
   usage?: Map<string, number>;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [iconPage, setIconPage] = useState(0);
 
   const update = (id: string, change: Partial<KeyType>) =>
     onChange(
@@ -82,6 +99,7 @@ export default function KeyEditor({
     };
     onChange([...value, type]);
     setOpenId(type.id);
+    setIconPage(pageOf(type.icon));
   }
 
   if (locked) {
@@ -140,7 +158,10 @@ export default function KeyEditor({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setOpenId(open ? null : type.id)}
+                  onClick={() => {
+                    setOpenId(open ? null : type.id);
+                    setIconPage(pageOf(type.icon));
+                  }}
                   aria-label={`Color and icon for ${type.label || "this type"}`}
                   aria-expanded={open}
                   title="Color and icon"
@@ -240,10 +261,10 @@ export default function KeyEditor({
                   </div>
                   <div
                     role="radiogroup"
-                    aria-label="Icon"
+                    aria-label={`Icon, page ${iconPage + 1} of ${ICON_PAGES.length}`}
                     className="grid grid-cols-8 gap-1"
                   >
-                    {ICONS.map((icon) => {
+                    {ICON_PAGES[iconPage].map((icon) => {
                       const Icon = KEY_ICONS[icon];
                       return (
                         <button
@@ -263,6 +284,41 @@ export default function KeyEditor({
                       );
                     })}
                   </div>
+                  {ICON_PAGES.length > 1 && (
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIconPage(iconPage - 1)}
+                        disabled={iconPage === 0}
+                        aria-label="Previous icons"
+                        className="hover:bg-accent flex size-7 items-center justify-center rounded-full disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <ChevronLeft className="size-4" aria-hidden="true" />
+                      </button>
+                      <div className="flex gap-1.5" aria-hidden="true">
+                        {ICON_PAGES.map((_, page) => (
+                          <span
+                            key={page}
+                            className={cn(
+                              "size-1.5 rounded-full transition-colors",
+                              page === iconPage
+                                ? "bg-foreground"
+                                : "bg-muted-foreground/30",
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIconPage(iconPage + 1)}
+                        disabled={iconPage === ICON_PAGES.length - 1}
+                        aria-label="More icons"
+                        className="hover:bg-accent flex size-7 items-center justify-center rounded-full disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <ChevronRight className="size-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </li>
