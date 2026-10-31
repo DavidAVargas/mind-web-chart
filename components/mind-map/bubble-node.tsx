@@ -16,7 +16,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState, type ComponentProps } from "react";
+import { useRef, useState, type ComponentProps } from "react";
 import {
   getBubbleCenter,
   getBubbleSize,
@@ -103,9 +103,11 @@ export default function BubbleNodeView({
     getEdges,
     addNodes,
     addEdges,
+    setNodes,
     updateNodeData,
     deleteElements,
   } = useReactFlow<BubbleNode, Edge>();
+  const nameRef = useRef<HTMLInputElement>(null);
   const {
     openNotes,
     detailsOpen,
@@ -234,6 +236,16 @@ export default function BubbleNodeView({
     MIN_ARC_STEP,
   );
 
+  /** The Done button: keep the name, and put away the type chips and bubble buttons. */
+  function doneNaming() {
+    nameRef.current?.blur();
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.selected ? { ...node, selected: false } : node,
+      ),
+    );
+  }
+
   function finishEditing(value: string) {
     setIsEditing(false);
     const label = value.trim();
@@ -299,6 +311,7 @@ export default function BubbleNodeView({
 
       {isEditing ? (
         <input
+          ref={nameRef}
           autoFocus
           defaultValue={data.label}
           maxLength={MAX_LABEL_LENGTH}
@@ -363,46 +376,55 @@ export default function BubbleNodeView({
 
       {/* While naming a new bubble, one tap picks its type. */}
       {isEditing && data.isNew && !isRoot && (
-        <div
-          role="radiogroup"
-          aria-label="Bubble type"
-          className="nodrag absolute top-full left-1/2 mt-3 flex w-max max-w-[22rem] -translate-x-1/2 flex-wrap justify-center gap-1"
-        >
-          {chartKey.map((option) => {
-            const OptionIcon = KEY_ICONS[option.icon];
-            const picked = option.id === data.kind;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={picked}
-                // Keep the cursor in the name while picking.
-                onPointerDown={(event) => event.preventDefault()}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => updateNodeData(id, { kind: option.id })}
-                className={cn(
-                  "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap shadow-sm transition-all",
-                  picked
-                    ? "border-transparent text-white"
-                    : "border-border bg-background text-foreground hover:-translate-y-0.5",
-                )}
-                style={
-                  picked
-                    ? {
-                        background:
-                          option.color === "outline"
-                            ? "var(--muted-foreground)"
-                            : KEY_COLORS[option.color].hex,
-                      }
-                    : undefined
-                }
-              >
-                <OptionIcon className="size-3" aria-hidden="true" />
-                {option.label}
-              </button>
-            );
-          })}
+        <div className="nodrag absolute top-full left-1/2 mt-3 flex w-max max-w-[22rem] -translate-x-1/2 flex-wrap justify-center gap-1">
+          <div role="radiogroup" aria-label="Bubble type" className="contents">
+            {chartKey.map((option) => {
+              const OptionIcon = KEY_ICONS[option.icon];
+              const picked = option.id === data.kind;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={picked}
+                  // Keep the cursor in the name while picking.
+                  onPointerDown={(event) => event.preventDefault()}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => updateNodeData(id, { kind: option.id })}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap shadow-sm transition-all",
+                    picked
+                      ? "border-transparent text-white"
+                      : "border-border bg-background text-foreground hover:-translate-y-0.5",
+                  )}
+                  style={
+                    picked
+                      ? {
+                          background:
+                            option.color === "outline"
+                              ? "var(--muted-foreground)"
+                              : KEY_COLORS[option.color].hex,
+                        }
+                      : undefined
+                  }
+                >
+                  <OptionIcon className="size-3" aria-hidden="true" />
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            // Keep the name's focus until Done takes over, so the tap lands.
+            onPointerDown={(event) => event.preventDefault()}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={doneNaming}
+            className="bg-foreground text-background flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap shadow-sm transition-transform hover:-translate-y-0.5"
+          >
+            <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+            Done
+          </button>
         </div>
       )}
 

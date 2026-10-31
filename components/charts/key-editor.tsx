@@ -326,15 +326,27 @@ export default function KeyEditor({
         })}
       </ul>
 
-      {value.length < MAX_KEY_TYPES && (
+      {/* While a type is open for editing, this button closes it; then it adds another. */}
+      {openId ? (
         <button
           type="button"
-          onClick={addType}
-          className="border-border hover:bg-accent text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 text-sm font-medium"
+          onClick={() => setOpenId(null)}
+          className="bg-primary text-primary-foreground flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold shadow-sm"
         >
-          <Plus className="size-4" aria-hidden="true" />
-          Add a type
+          <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+          Done
         </button>
+      ) : (
+        value.length < MAX_KEY_TYPES && (
+          <button
+            type="button"
+            onClick={addType}
+            className="border-border hover:bg-accent text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 text-sm font-medium"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add a type
+          </button>
+        )
       )}
     </div>
   );
