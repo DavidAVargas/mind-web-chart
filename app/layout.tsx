@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { fraunces, inter } from "@/utils/fonts";
 import "@/styles/globals.css";
 import { APP_NAME, SITE_URL, TAGLINE } from "@/lib/brand";
+import NativeShell from "@/components/native/native-shell";
 
 export const metadata: Metadata = {
   title: { template: `%s · ${APP_NAME}`, default: APP_NAME },
@@ -64,6 +65,7 @@ export default function RootLayout({
           afterSignOutUrl="/"
         >
           <div className="h-dvh">{children}</div>
+          <NativeShell />
         </ClerkProvider>
       </body>
     </html>
