@@ -92,6 +92,30 @@ function ActionButton({ className, ...props }: ComponentProps<"button">) {
   );
 }
 
+/** What a badge on a bubble means, shown beside it while hovered. */
+function BadgeHint({
+  side,
+  children,
+}: {
+  side: "left" | "right";
+  children: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "bg-foreground text-background touch:hidden pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap no-underline opacity-0 shadow-md transition-opacity group-hover/badge:opacity-100 group-focus-visible/badge:opacity-100",
+        side === "right" ? "left-full ml-2" : "right-full mr-2",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Rings a badge while hovered, so it's clear it can be tapped. */
+const BADGE_HOVER = "group/badge hover:ring-brand-500 hover:ring-2";
+
 export default function BubbleNodeView({
   id,
   data,
@@ -354,17 +378,20 @@ export default function BubbleNodeView({
           role="checkbox"
           aria-checked={Boolean(data.done)}
           aria-label={`Mark ${data.label} as ${data.done ? "not done" : "done"}`}
-          title={data.done ? "Done — tap to undo" : "Mark as done"}
           onClick={() => updateNodeData(id, { done: !data.done })}
           style={badgeStyle}
           className={cn(
             "nodrag absolute top-[7%] left-[7%] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-500 shadow-sm transition-colors",
+            BADGE_HOVER,
             data.done
               ? "bg-emerald-500 text-white"
               : "bg-background text-transparent hover:text-emerald-500",
           )}
         >
           <Check className="size-[60%]" strokeWidth={3} aria-hidden="true" />
+          <BadgeHint side="left">
+            {data.done ? "Done · tap to undo" : "Tap when it’s done"}
+          </BadgeHint>
         </button>
       )}
 
@@ -456,10 +483,15 @@ export default function BubbleNodeView({
           type="button"
           onClick={() => toggleCollapse(id)}
           aria-label={`Show ${descendants} hidden bubbles under ${data.label}`}
-          title="Show branch"
-          className="nodrag bg-foreground text-background absolute top-1/2 left-full -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-semibold shadow-md transition-transform hover:scale-110"
+          className={cn(
+            "nodrag bg-foreground text-background absolute top-1/2 left-full -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-semibold shadow-md transition-transform hover:scale-110",
+            BADGE_HOVER,
+          )}
         >
           +{descendants}
+          <BadgeHint side="right">
+            {`${descendants} hidden · tap to show`}
+          </BadgeHint>
         </button>
       )}
 
@@ -467,11 +499,14 @@ export default function BubbleNodeView({
         <ActionButton
           onClick={() => openNotes(id)}
           aria-label={`Open notes for ${data.label}`}
-          title="Has notes"
           style={badgeStyle}
-          className="absolute top-[7%] right-[7%] translate-x-1/2 -translate-y-1/2 shadow-sm"
+          className={cn(
+            "absolute top-[7%] right-[7%] translate-x-1/2 -translate-y-1/2 shadow-sm",
+            BADGE_HOVER,
+          )}
         >
           <NotebookPen className="size-[60%]" aria-hidden="true" />
+          <BadgeHint side="right">Has notes · tap to read</BadgeHint>
         </ActionButton>
       )}
 

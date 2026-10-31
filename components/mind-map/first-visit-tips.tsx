@@ -6,6 +6,7 @@ import {
   CircleHelp,
   KeyRound,
   Link2,
+  NotebookPen,
   Pencil,
   Plus,
   Sparkles,
@@ -78,8 +79,9 @@ const TIPS: {
     title: "Notes",
     body: (
       <>
-        <Btn icon={Pencil} /> on a bubble opens its notes. Double-tap a bubble
-        to rename it.
+        <Btn icon={Pencil} /> on a bubble opens its notes. A bubble with notes
+        shows <Btn icon={NotebookPen} />: tap it to read them. Double-tap a
+        bubble to rename it.
       </>
     ),
   },
