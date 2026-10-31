@@ -19,8 +19,10 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 0,
-      launchAutoHide: false,
+      // The site hides it as soon as it loads (components/native/native-shell.tsx).
+      // This is the most it stays, e.g. when offline and the site never loads.
+      launchShowDuration: 3000,
+      launchAutoHide: true,
       backgroundColor: "#ffffff",
     },
   },

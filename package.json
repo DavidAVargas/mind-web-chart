@@ -12,7 +12,8 @@
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
     "cap:sync": "cap sync",
     "ios": "cap open ios",
-    "android": "cap open android"
+    "android": "cap open android",
+    "cap:assets": "npx -y @capacitor/assets@3.0.5 generate --ios --android --iconBackgroundColor '#f6f1ff' --iconBackgroundColorDark '#141414' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#141414'"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
