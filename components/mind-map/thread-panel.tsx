@@ -7,6 +7,7 @@ import {
 } from "@/lib/mind-map/graph";
 import type { BubbleNode } from "./bubble-node";
 import { PANEL_CLASS } from "./notes-panel";
+import { useDraft } from "./use-draft";
 
 /** Details for a thread: which bubbles it ties together, and why. */
 export default function ThreadPanel({
@@ -19,6 +20,10 @@ export default function ThreadPanel({
   const edge = useStore((state) => state.edgeLookup.get(edgeId));
   const bubbles = useNodesData<BubbleNode>(edge ? getThreadNodeIds(edge) : []);
   const { updateEdgeData } = useReactFlow();
+  const note = useDraft(
+    (edge?.data as ThreadData | undefined)?.note ?? "",
+    (text) => updateEdgeData(edgeId, { note: text }),
+  );
 
   if (!edge) return null;
 
@@ -64,11 +69,8 @@ export default function ThreadPanel({
         Why are these connected?
         <textarea
           autoFocus
-          value={data?.note ?? ""}
+          {...note}
           placeholder="e.g. Not being fit yet is holding me back from posting and traveling…"
-          onChange={(event) =>
-            updateEdgeData(edgeId, { note: event.target.value })
-          }
           className="border-input bg-background min-h-40 flex-1 resize-none rounded-md border px-3 py-2 text-base leading-relaxed font-normal"
         />
       </label>

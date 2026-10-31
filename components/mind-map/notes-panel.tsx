@@ -4,6 +4,7 @@ import type { BubbleNode } from "./bubble-node";
 import { MAX_LABEL_LENGTH } from "@/lib/mind-map/bubble-kinds";
 import { getType, isCheckable, ROOT_KIND } from "@/lib/mind-map/chart-key";
 import { useMindMap } from "./mind-map-context";
+import { useDraft } from "./use-draft";
 
 /** Side panel on desktop, bottom sheet on phones. */
 export const PANEL_CLASS =
@@ -20,6 +21,12 @@ export default function NotesPanel({
   const node = useNodesData<BubbleNode>(nodeId);
   const { updateNodeData } = useReactFlow<BubbleNode, Edge>();
   const { chartKey, openKey } = useMindMap();
+  const title = useDraft(node?.data.label ?? "", (label) =>
+    updateNodeData(nodeId, { label }),
+  );
+  const note = useDraft(node?.data.note ?? "", (text) =>
+    updateNodeData(nodeId, { note: text }),
+  );
 
   if (!node) return null;
 
@@ -50,12 +57,9 @@ export default function NotesPanel({
       <label className="flex flex-col gap-1 text-sm font-medium">
         Title
         <input
-          value={data.label}
+          {...title}
           disabled={isRoot}
           maxLength={MAX_LABEL_LENGTH}
-          onChange={(event) =>
-            updateNodeData(nodeId, { label: event.target.value })
-          }
           className="border-input bg-background rounded-md border px-3 py-2 text-base font-normal disabled:opacity-60"
         />
         {isRoot && (
@@ -122,11 +126,8 @@ export default function NotesPanel({
         <textarea
           // A brand-new bubble keeps the cursor so you can name it first.
           autoFocus={!data.isNew}
-          value={data.note ?? ""}
+          {...note}
           placeholder="Go deeper on this thought…"
-          onChange={(event) =>
-            updateNodeData(nodeId, { note: event.target.value })
-          }
           className="border-input bg-background min-h-40 flex-1 resize-none rounded-md border px-3 py-2 text-base leading-relaxed font-normal"
         />
       </label>
