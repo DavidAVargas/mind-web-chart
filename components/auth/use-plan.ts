@@ -3,12 +3,13 @@
 import { useUser } from "@clerk/nextjs";
 
 /**
- * What the signed-in account can do. Paying will set `plan: "pro"` on the
- * account; until payments exist, only admins have the full version.
+ * What the signed-in account can do. Buying Pro sets `plan: "pro"` on the
+ * account (see lib/server/billing.ts); admins get everything without paying.
  */
 export function usePlan() {
   const { user } = useUser();
   const metadata = user?.publicMetadata;
   const isAdmin = metadata?.role === "admin";
-  return { isAdmin, isPaid: isAdmin || metadata?.plan === "pro" };
+  const isPro = metadata?.plan === "pro";
+  return { isAdmin, isPro, isPaid: isAdmin || isPro };
 }

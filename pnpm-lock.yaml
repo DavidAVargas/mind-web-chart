@@ -72,6 +72,12 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.5
         version: 1.2.5(@types/react@19.2.14)(react@19.2.4)
+      '@revenuecat/purchases-capacitor':
+        specifier: 13.7.4
+        version: 13.7.4(@capacitor/core@8.5.3)
+      '@revenuecat/purchases-js':
+        specifier: 1.71.0
+        version: 1.71.0
       '@xyflow/react':
         specifier: ^12.12.0
         version: 12.12.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1290,6 +1296,17 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@revenuecat/purchases-capacitor@13.7.4':
+    resolution: {integrity: sha512-BIeHJv1YOCycBlYJ+8nAe4vzEYmqiQGxDIfamqQgojzm8XuWMuOt9jq7kK9ClnIfcUEz1YIh1Fy/Xb/03tUhMw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@revenuecat/purchases-js@1.71.0':
+    resolution: {integrity: sha512-FC118I8NvBh1gvFCw/JtL6oRoZwXws4TnfGtUY7YFPZIA39+kTpmWkGxQwSwn9XXqXPtBVD1b3Hvs7d+OgBpHQ==}
+
+  '@revenuecat/purchases-typescript-internal-esm@19.12.0':
+    resolution: {integrity: sha512-Hsuo4ACBK2CLRS59OiU8YxnO2IFqjgQ+7ZGIO8U4+VHQ3hWSmWWoHGcfTeMfL7jqUPLQoqLiQCZ1H30iQpzijQ==}
 
   '@rolldown/binding-android-arm64@1.0.3':
     resolution: {integrity: sha512-454rs7jHngixp/NMxd5srYD57OnzSlZ/eFTETjORQHLwJG1lRtmNOJcBerZlfu4GjKqeq8aCCIQrMdHyhI51Hw==}
@@ -5367,6 +5384,15 @@ snapshots:
       react: 19.2.4
     optionalDependencies:
       '@types/react': 19.2.14
+
+  '@revenuecat/purchases-capacitor@13.7.4(@capacitor/core@8.5.3)':
+    dependencies:
+      '@capacitor/core': 8.5.3
+      '@revenuecat/purchases-typescript-internal-esm': 19.12.0
+
+  '@revenuecat/purchases-js@1.71.0': {}
+
+  '@revenuecat/purchases-typescript-internal-esm@19.12.0': {}
 
   '@rolldown/binding-android-arm64@1.0.3':
     optional: true

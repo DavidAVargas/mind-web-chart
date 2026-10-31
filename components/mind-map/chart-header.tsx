@@ -1,6 +1,6 @@
-import { UserButton } from "@clerk/nextjs";
 import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
+import AccountButton from "@/components/auth/account-button";
 import AdminBadge from "@/components/auth/admin-badge";
 import { LogoMark } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
@@ -43,7 +43,7 @@ export default function ChartHeader({
         <AdminBadge />
         <ModeToggle />
         <div className="flex size-7 items-center justify-center">
-          <UserButton />
+          <AccountButton />
         </div>
       </div>
     </header>

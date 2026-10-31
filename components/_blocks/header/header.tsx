@@ -1,5 +1,5 @@
-import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import AccountButton from "@/components/auth/account-button";
 import AdminBadge from "@/components/auth/admin-badge";
 import { Logo } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
@@ -23,7 +23,7 @@ export default function Header() {
         <ModeToggle />
         {/* Keeps its spot while Clerk loads, so the header doesn't jump. */}
         <div className="flex size-7 items-center justify-center">
-          <UserButton />
+          <AccountButton />
         </div>
       </div>
     </header>
