@@ -26,6 +26,11 @@ export default function LandingFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/#pricing" className="hover:underline">
+                Pricing
+              </Link>
+            </li>
+            <li>
               <Link href="/charts" className="hover:underline">
                 Your charts
               </Link>

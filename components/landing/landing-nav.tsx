@@ -4,6 +4,7 @@ import { Show, UserButton } from "@clerk/nextjs";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePlan } from "@/components/auth/use-plan";
 import { Logo } from "@/components/brand/logo";
 import ModeToggle from "@/components/utility/mode-toggle";
 import { APP_NAME } from "@/lib/brand";
@@ -12,12 +13,18 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#features", label: "Features" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
 /** Top bar for the public site. Turns solid once the page scrolls. */
 export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // Pro accounts don't see the pricing section, so no link to it either.
+  const { isPro } = usePlan();
+  const links = isPro
+    ? LINKS.filter((link) => link.href !== "/#pricing")
+    : LINKS;
 
   // The page scrolls inside its own container, so listen for scrolling anywhere.
   useEffect(() => {
@@ -49,7 +56,7 @@ export default function LandingNav() {
         </Link>
 
         <ul className="hidden items-center gap-1 md:flex">
-          {LINKS.map((link) => (
+          {links.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
@@ -109,7 +116,7 @@ export default function LandingNav() {
       {open && (
         <div className="animate-in fade-in slide-in-from-top-2 border-border border-t px-4 pt-2 pb-4 duration-200 md:hidden">
           <ul className="flex flex-col">
-            {LINKS.map((link) => (
+            {links.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
