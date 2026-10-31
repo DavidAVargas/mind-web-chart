@@ -262,6 +262,12 @@ export default function BubbleNodeView({
     <div
       style={{ width: depthStyle.size, height: depthStyle.size }}
       onDoubleClick={() => !isRoot && setIsEditing(true)}
+      // While naming, grabbing the bubble moves it without ending the naming.
+      onMouseDown={(event) => {
+        if (isEditing && event.target !== nameRef.current) {
+          event.preventDefault();
+        }
+      }}
       className={cn(
         "group relative flex flex-col items-center justify-center gap-0.5 rounded-full border-2 p-3 text-center leading-tight break-words transition-[box-shadow,opacity,scale]",
         isRoot
@@ -424,6 +430,17 @@ export default function BubbleNodeView({
           >
             <Check className="size-3" strokeWidth={3} aria-hidden="true" />
             Done
+          </button>
+          <button
+            type="button"
+            aria-label="Delete this bubble"
+            title="Delete this bubble"
+            onPointerDown={(event) => event.preventDefault()}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => deleteElements({ nodes: [{ id }] })}
+            className="border-border bg-background text-muted-foreground hover:text-destructive flex items-center justify-center rounded-full border px-2 py-1 shadow-sm transition-colors"
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
           </button>
         </div>
       )}
