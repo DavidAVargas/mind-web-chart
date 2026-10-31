@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { fraunces, inter } from "@/utils/fonts";
 import "@/styles/globals.css";
 import { APP_NAME, SITE_URL, TAGLINE } from "@/lib/brand";
@@ -23,6 +23,14 @@ export const metadata: Metadata = {
     title: APP_NAME,
     description: TAGLINE,
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Stops iPhones zooming the page in when a text box is tapped. Pinch zoom
+  // still works, and the chart has its own zoom.
+  maximumScale: 1,
 };
 
 // Sets light/dark before the page paints, so there's no flash of the wrong theme.

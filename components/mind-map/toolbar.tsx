@@ -42,7 +42,7 @@ function ToolButton({
       aria-label={label}
       title={label}
       className={cn(
-        "hover:bg-accent flex size-9 items-center justify-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-35 pointer-coarse:size-11 pointer-coarse:[&_svg]:size-5",
+        "hover:bg-accent touch:size-[46px] touch:[&_svg]:size-[22px] flex size-9 items-center justify-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-35",
         className,
       )}
       {...props}
@@ -63,7 +63,7 @@ function MenuItem({
       type="button"
       role="menuitem"
       className={cn(
-        "hover:bg-accent flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm",
+        "hover:bg-accent touch:py-3 touch:text-base flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm",
         className,
       )}
       {...props}
@@ -205,7 +205,7 @@ export default function Toolbar({
             <div
               role="menu"
               onClick={() => setMenuOpen(false)}
-              className="border-border bg-popover text-popover-foreground absolute top-full left-0 mt-2 w-52 rounded-xl border p-1 shadow-lg"
+              className="border-border bg-popover text-popover-foreground absolute top-full left-0 mt-2 w-52 rounded-xl border p-1 shadow-lg max-sm:right-0 max-sm:left-auto max-sm:w-56"
             >
               <MenuItem
                 icon={<Download className="size-4" aria-hidden="true" />}
@@ -279,7 +279,7 @@ export default function Toolbar({
               }
             }}
             // 16px text on phones, or iOS zooms the page in when the box is focused.
-            className="bg-background border-input rounded-lg border py-1.5 pr-2 pl-8 text-sm max-sm:w-full max-sm:text-base sm:w-48"
+            className="bg-background border-input touch:py-2.5 rounded-lg border py-1.5 pr-2 pl-8 text-sm max-sm:w-full max-sm:text-base sm:w-48"
           />
         </label>
       </div>
@@ -292,7 +292,7 @@ export default function Toolbar({
                 <button
                   type="button"
                   onClick={() => pick(node.id)}
-                  className="hover:bg-accent flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm"
+                  className="hover:bg-accent touch:py-3 touch:text-base flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm"
                 >
                   <span className="truncate">
                     {node.data.label || "Untitled"}

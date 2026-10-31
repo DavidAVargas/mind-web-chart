@@ -6,6 +6,12 @@
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
+/* Touch screens and narrow windows: bigger tap targets. */
+@custom-variant touch {
+  @media (pointer: coarse), (width < 40rem) {
+    @slot;
+  }
+}
 
 @layer base {
   * {
@@ -213,14 +219,18 @@ input[type="search"]::-webkit-search-cancel-button {
   }
 }
 
-/* Bigger zoom buttons on touch screens, so they're easy to hit with a finger. */
-@media (pointer: coarse) {
-  .react-flow__controls-button {
-    width: 40px;
-    height: 40px;
+/* Bigger zoom buttons on touch screens and narrow windows, so they're easy to
+   hit with a finger. React Flow's own styles load after these, hence the extra
+   .react-flow to outrank them. */
+@media (pointer: coarse), (width < 40rem) {
+  .react-flow .react-flow__controls-button {
+    width: 38px;
+    height: 38px;
+    padding: 8px;
   }
-  .react-flow__controls-button svg {
+  .react-flow .react-flow__controls-button svg {
     max-width: 16px;
     max-height: 16px;
   }
 }
+
