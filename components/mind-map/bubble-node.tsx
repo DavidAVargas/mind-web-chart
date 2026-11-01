@@ -381,10 +381,10 @@ export default function BubbleNodeView({
           onClick={() => updateNodeData(id, { done: !data.done })}
           style={badgeStyle}
           className={cn(
-            "nodrag absolute top-[7%] left-[7%] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-500 shadow-sm transition-colors",
+            "nodrag absolute top-[7%] left-[7%] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-emerald-600 shadow-sm transition-colors",
             BADGE_HOVER,
             data.done
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-600 text-white"
               : "bg-background text-transparent hover:text-emerald-500",
           )}
         >
@@ -426,18 +426,16 @@ export default function BubbleNodeView({
                   onClick={() => updateNodeData(id, { kind: option.id })}
                   className={cn(
                     "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap shadow-sm transition-all",
-                    picked
-                      ? "border-transparent text-white"
-                      : "border-border bg-background text-foreground hover:-translate-y-0.5",
+                    !picked &&
+                      "border-border bg-background text-foreground hover:-translate-y-0.5",
+                    picked &&
+                      (option.color === "outline"
+                        ? "border-transparent text-white"
+                        : KEY_COLORS[option.color].className),
                   )}
                   style={
-                    picked
-                      ? {
-                          background:
-                            option.color === "outline"
-                              ? "var(--muted-foreground)"
-                              : KEY_COLORS[option.color].hex,
-                        }
+                    picked && option.color === "outline"
+                      ? { background: "var(--muted-foreground)" }
                       : undefined
                   }
                 >

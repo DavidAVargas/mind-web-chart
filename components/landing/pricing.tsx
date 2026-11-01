@@ -99,7 +99,7 @@ export default function Pricing() {
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-xs font-semibold",
                   yearly
-                    ? "bg-emerald-400/25 text-emerald-300 dark:text-emerald-700"
+                    ? "bg-emerald-400/25 text-emerald-300 dark:text-emerald-800"
                     : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
                 )}
               >
@@ -134,7 +134,7 @@ export default function Pricing() {
         </li>
 
         <li className="reveal border-brand-500 bg-card relative flex flex-col rounded-3xl border-2 p-7 shadow-xl">
-          <span className="bg-brand-500 absolute -top-3 left-7 rounded-full px-3 py-0.5 text-xs font-semibold text-white">
+          <span className="bg-brand-600 absolute -top-3 left-7 rounded-full px-3 py-0.5 text-xs font-semibold text-white">
             Pro
           </span>
           <h3 className="text-lg font-semibold">Pro</h3>

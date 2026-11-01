@@ -45,12 +45,13 @@ function TypeChips() {
     <ul className="flex flex-wrap gap-2">
       {LIFE_KEY.map((type) => {
         const Icon = KEY_ICONS[type.icon];
-        const color = KEY_COLORS[type.color].hex;
         return (
           <li
             key={type.id}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-white shadow-sm"
-            style={{ background: color }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm font-medium shadow-sm",
+              KEY_COLORS[type.color].className,
+            )}
           >
             <Icon className="size-3.5" aria-hidden="true" />
             {type.label}
@@ -116,7 +117,7 @@ function DoneArt() {
           <span
             className={cn(
               "flex size-5 items-center justify-center rounded-full border-2 border-emerald-500",
-              done ? "bg-emerald-500 text-white" : "text-transparent",
+              done ? "bg-emerald-600 text-white" : "text-transparent",
             )}
           >
             <Check className="size-3" strokeWidth={3} aria-hidden="true" />

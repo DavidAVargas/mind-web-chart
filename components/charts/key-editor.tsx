@@ -46,16 +46,12 @@ export function TypeSwatch({
   return (
     <span
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
-        type.color === "outline" &&
-          "border-muted-foreground text-foreground border-2 border-dashed",
+        "flex size-8 shrink-0 items-center justify-center rounded-full border-2 shadow-sm",
+        type.color === "outline"
+          ? "border-muted-foreground text-foreground border-dashed"
+          : KEY_COLORS[type.color].className,
         className,
       )}
-      style={
-        type.color === "outline"
-          ? undefined
-          : { background: KEY_COLORS[type.color].hex }
-      }
     >
       <Icon className="size-4" aria-hidden="true" />
     </span>

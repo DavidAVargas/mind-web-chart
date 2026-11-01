@@ -363,7 +363,7 @@ export default function ThreadEdge({
                 }}
                 className={cn(
                   "nodrag nopan bg-background pointer-events-auto absolute flex size-8 items-center justify-center rounded-full border-[3px] text-sm font-bold shadow-md",
-                  isPicked ? "text-white" : "text-foreground",
+                  isPicked ? "text-neutral-950" : "text-foreground",
                 )}
               >
                 {i + 1}

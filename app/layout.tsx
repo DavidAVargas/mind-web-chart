@@ -29,9 +29,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // Stops iPhones zooming the page in when a text box is tapped. Pinch zoom
-  // still works, and the chart has its own zoom.
-  maximumScale: 1,
   // Lets pages reach under the phone's clock, camera and home bar; the wrapper
   // below pads them back out (see `SAFE_AREA`).
   viewportFit: "cover",
@@ -41,6 +38,15 @@ export const viewport: Viewport = {
 // (like a foldable opened up) sit along a side edge. Zero on a computer.
 const SAFE_AREA =
   "pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]";
+
+// Stops iPhones zooming the page in when a text box is tapped. Only on
+// iPhones and iPads, which still allow pinch zoom with it; elsewhere it would
+// stop people zooming in to read.
+const iosZoomScript = `(() => {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (ios && meta) meta.content += ", maximum-scale=1";
+})();`;
 
 // Sets light/dark before the page paints, so there's no flash of the wrong theme.
 const themeScript = `(() => {
@@ -64,8 +70,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${fraunces.variable}`}>
+        <script dangerouslySetInnerHTML={{ __html: iosZoomScript }} />
         <ClerkProvider
-          appearance={{ theme: shadcn }}
+          appearance={{
+            theme: shadcn,
+            // Clerk's default gray here is a little too faint to read easily.
+            elements: { footerActionText: "text-foreground/75" },
+          }}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           signInFallbackRedirectUrl="/charts"
