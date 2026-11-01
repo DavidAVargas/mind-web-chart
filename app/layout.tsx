@@ -75,7 +75,7 @@ export default function RootLayout({
           appearance={{
             theme: shadcn,
             // Clerk's default gray here is a little too faint to read easily.
-            elements: { footerActionText: "text-foreground/75" },
+            elements: { footerActionText: "text-foreground/75!" },
           }}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
