@@ -16,6 +16,12 @@ const config: CapacitorConfig = {
     url: `${SITE_URL}/charts`,
     // Shown when the site can't be reached, e.g. with no signal.
     errorPath: "offline.html",
+    // Anything not listed here opens in the phone's browser instead of the app.
+    // The iPhone app only counts addresses starting with `url` above as its
+    // own, so the rest of the site (like /sign-in) has to be listed too. Clerk
+    // checks the sign-in on its own address before the site loads; add the
+    // production Clerk address (clerk.<domain>) once it exists.
+    allowNavigation: [new URL(SITE_URL).host, "*.clerk.accounts.dev"],
   },
   plugins: {
     SplashScreen: {
