@@ -27,6 +27,7 @@ import NotesPanel from "./notes-panel";
 import ThreadPanel from "./thread-panel";
 import Toolbar from "./toolbar";
 import { useHistory } from "./use-history";
+import { useKeepCenter } from "./use-keep-center";
 import { getBubbleCenter, getBubbleSize } from "@/lib/mind-map/bubble-kinds";
 import {
   BRANCH_EDGE,
@@ -175,6 +176,8 @@ function MindMapCanvas({
   } = useReactFlow<BubbleNode, Edge>();
   const [details, setDetails] = useState<Details | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  useKeepCenter(canvasRef);
   const [linking, setLinking] = useState<Linking | null>(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   // Threads that lose some (not all) of their bubbles in a delete, as they were before.
@@ -706,7 +709,7 @@ function MindMapCanvas({
           emoji={emoji}
           onRename={() => setRenaming(true)}
         />
-        <div className="relative min-h-0 flex-1">
+        <div ref={canvasRef} className="relative min-h-0 flex-1">
           <ReactFlow
             nodes={displayNodes}
             edges={displayEdges}

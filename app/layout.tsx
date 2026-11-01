@@ -32,7 +32,15 @@ export const viewport: Viewport = {
   // Stops iPhones zooming the page in when a text box is tapped. Pinch zoom
   // still works, and the chart has its own zoom.
   maximumScale: 1,
+  // Lets pages reach under the phone's clock, camera and home bar; the wrapper
+  // below pads them back out (see `SAFE_AREA`).
+  viewportFit: "cover",
 };
+
+// Keeps buttons clear of the clock, camera and home bar, which on some phones
+// (like a foldable opened up) sit along a side edge. Zero on a computer.
+const SAFE_AREA =
+  "pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]";
 
 // Sets light/dark before the page paints, so there's no flash of the wrong theme.
 const themeScript = `(() => {
@@ -64,7 +72,7 @@ export default function RootLayout({
           signUpFallbackRedirectUrl="/charts"
           afterSignOutUrl="/"
         >
-          <div className="h-dvh">{children}</div>
+          <div className={`h-dvh ${SAFE_AREA}`}>{children}</div>
           <NativeShell />
         </ClerkProvider>
       </body>

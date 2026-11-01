@@ -44,7 +44,7 @@ export default function LandingNav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transition-colors duration-300",
+        "sticky top-[env(safe-area-inset-top)] z-30 transition-colors duration-300",
         // Always a solid-ish background, so the links stay readable over the page.
         "bg-background/85 border-b backdrop-blur-xl",
         scrolled || open ? "border-border shadow-sm" : "border-transparent",

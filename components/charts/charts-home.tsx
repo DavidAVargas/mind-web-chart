@@ -584,7 +584,7 @@ export default function ChartsHome() {
           type="button"
           onClick={() => startChart()}
           aria-label="New chart"
-          className="bg-primary text-primary-foreground fixed right-5 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full shadow-xl transition-transform active:scale-95 sm:hidden"
+          className="bg-primary text-primary-foreground fixed right-[calc(1.25rem+env(safe-area-inset-right))] bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full shadow-xl transition-transform active:scale-95 sm:hidden"
         >
           <Plus className="size-6" aria-hidden="true" />
         </button>
